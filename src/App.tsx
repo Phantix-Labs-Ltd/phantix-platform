@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useCanonicalUrl } from "@/lib/useCanonicalUrl";
 import { StoreProvider, ToastViewport, useStore } from "@/lib/store";
 import Layout from "@/components/Layout";
 import CookieConsent from "@/components/CookieConsent";
@@ -77,10 +78,17 @@ function SetupRoute() {
   return <SetupWizard />;
 }
 
+/** Must render inside the router: it reads the current path. */
+function CanonicalUrl() {
+  useCanonicalUrl("https://platform.phantixlabs.com");
+  return null;
+}
+
 export default function App() {
   return (
     <StoreProvider>
       <BrowserRouter>
+        <CanonicalUrl />
         <React.Suspense fallback={<ShellSkeleton />}>
           <Routes>
             <Route path="/login" element={<Login />} />
