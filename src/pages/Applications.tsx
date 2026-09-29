@@ -4,7 +4,7 @@ import { LayoutGrid, Lock, ExternalLink, ShieldCheck, Loader2 } from "lucide-rea
 import DocLink from "@/components/DocLink";
 import { PageHeader, Card, CardHeader, EmptyState, CardListSkeleton } from "@/components/ui";
 import { useStore } from "@/lib/store";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, publicDetailCopy } from "@/lib/api";
 import { cx } from "@/lib/utils";
 
 /**
@@ -89,9 +89,7 @@ export default function Applications() {
     } catch (err) {
       const message =
         err instanceof ApiError
-          ? typeof err.detail === "string"
-            ? err.detail
-            : err.message
+          ? (typeof err.detail === "string" ? publicDetailCopy(err.detail) : null) ?? err.message
           : "Could not update applications.";
       toast("error", "Change not saved", message);
     } finally {

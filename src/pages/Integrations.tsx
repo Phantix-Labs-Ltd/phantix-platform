@@ -9,7 +9,7 @@ import DocLink from "@/components/DocLink";
 import { BrandIcon } from "@/components/BrandIcon";
 import { PageHeader, Card, CardHeader, CollapsibleCard, StatusBadge, Tabs, EmptyState, Modal, CopyChip, SkeletonCard, CardListSkeleton } from "@/components/ui";
 import { useStore } from "@/lib/store";
-import { isPendingApproval } from "@/lib/api";
+import { isPendingApproval, publicDetailCopy } from "@/lib/api";
 import { useResource } from "@/lib/useResource";
 import { timeAgo, cx, humanize } from "@/lib/utils";
 import {
@@ -87,7 +87,9 @@ export default function Integrations() {
     try {
       const res = await testHubInstallation(inst.id);
       const ok = res?.ok ?? res?.healthy ?? res?.status === "ok";
-      toast(ok ? "success" : "error", ok ? "Health OK" : "Health check failed", String(res?.message ?? res?.detail ?? ""));
+      // The health body is backend prose — normalize before it reaches the toast.
+      const detail = publicDetailCopy(res?.message ?? res?.detail) ?? "";
+      toast(ok ? "success" : "error", ok ? "Health OK" : "Health check failed", detail);
     } catch (e) {
       toast("error", "Test failed", e instanceof Error ? e.message : "");
     }

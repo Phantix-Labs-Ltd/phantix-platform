@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useSidebarCollapsed } from "@/lib/useSidebarCollapsed";
-import { DEMO_MODE, AGI_ENABLED } from "@/lib/api";
+import { DEMO_MODE, AGI_ENABLED, publicDetailCopy } from "@/lib/api";
 import { APP_URL } from "@/lib/links";
 import { cx } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -234,7 +234,8 @@ export default function Layout() {
   // Catch billing-required 402 responses and show upgrade prompt
   useEffect(() => {
     const handler = (e: Event) => {
-      const msg = (e as CustomEvent).detail as string;
+      // The event carries the backend's upgrade text; normalize it before display.
+      const msg = publicDetailCopy((e as CustomEvent).detail) || "This feature needs an upgrade.";
       toast("warning", "Upgrade required", `${msg} --- visit Billing to subscribe or redeem a code.`);
     };
     window.addEventListener("phantix:billing-required", handler);
