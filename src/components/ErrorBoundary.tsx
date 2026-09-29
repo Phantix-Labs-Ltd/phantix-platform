@@ -1,5 +1,6 @@
 import React from "react";
 import { ShieldAlert, RefreshCw } from "lucide-react";
+import { tokens } from "@/lib/api";
 
 type Props = { children: React.ReactNode };
 type State = { error: Error | null; info: React.ErrorInfo | null };
@@ -47,9 +48,14 @@ export default class ErrorBoundary extends React.Component<Props, State> {
                 type="button"
                 className="btn-primary flex-1"
                 onClick={() => {
-                  try { sessionStorage.removeItem("platform_access_token"); } catch {}
-                  try { sessionStorage.removeItem("platform_org_user_token"); } catch {}
-                  try { sessionStorage.removeItem("platform_dual_control"); } catch {}
+                  // Clear through the token store so the persistent keys (not just
+                  // the legacy sessionStorage ones) are emptied.
+                  try {
+                    tokens.platform = null;
+                    tokens.orgUser = null;
+                    tokens.dualControl = null;
+                    tokens.email = null;
+                  } catch { /* storage unavailable */ }
                   window.location.href = "/login";
                 }}
               >

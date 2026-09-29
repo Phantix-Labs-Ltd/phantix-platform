@@ -628,6 +628,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastId = useRef(0);
   const hydrating = useRef(false);
+  // Whether a stored session existed when this page loaded. If the backend then
+  // rejects it (expired/revoked while the operator was away), the page is held
+  // under the "session has expired" card instead of a bare redirect to /login.
+  const hadSessionAtBoot = useRef(!!tokens.platform);
   const [sessionLoading, setSessionLoading] = useState(!!(tokens.platform && !DEMO_MODE));
   const [sessionExpired, setSessionExpired] = useState<SessionExpired>({ active: false, returnTo: "" });
   const [billingEntitlements, setBillingEnts] = useState<Record<string, any> | null>(null);
@@ -891,10 +895,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         persist((s) => ({ ...s, org: { ...s.org, email: fallback, primary_email: fallback } }));
       }
     } finally {
+      // The stored session was rejected (expired or revoked while the operator
+      // was away). Keep the page mounted and raise the card, so they choose to
+      // sign in again rather than being dropped on /login with no explanation.
+      if (hadSessionAtBoot.current && !tokens.platform) expireSession();
       hydrating.current = false;
       setSessionLoading(false);
     }
-  }, [persist]);
+  }, [persist, expireSession]);
 
   const toast = useCallback((kind: ToastKind, title: string, body?: string) => {
     const id = ++toastId.current;

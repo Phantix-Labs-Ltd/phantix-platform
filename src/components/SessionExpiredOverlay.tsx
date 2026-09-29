@@ -1,8 +1,23 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Clock, ShieldAlert } from "lucide-react";
 import { useStore } from "@/lib/store";
+
+/** Routes that already ARE the sign-in surface: the card must not cover them. */
+const AUTH_PATHS = [
+  "/login",
+  "/register",
+  "/password-reset",
+  "/reset-password",
+  "/device-confirm",
+  "/change-password",
+  "/setup",
+  "/privacy",
+  "/terms",
+  "/aup",
+  "/cookies",
+];
 
 /**
  * Shown when the app (company) session ends mid-use — a 401 cleared the bearer
@@ -16,7 +31,13 @@ import { useStore } from "@/lib/store";
 export default function SessionExpiredOverlay() {
   const { sessionExpired, logout } = useStore();
   const navigate = useNavigate();
-  const open = sessionExpired.active;
+  const location = useLocation();
+  // Never cover the sign-in surface itself (e.g. the operator navigated to
+  // /login directly while a stale token was still present).
+  const onAuthRoute = AUTH_PATHS.some(
+    (p) => location.pathname === p || location.pathname.startsWith(`${p}/`),
+  );
+  const open = sessionExpired.active && !onAuthRoute;
 
   // Keep the page behind the card from scrolling while it is open.
   useEffect(() => {

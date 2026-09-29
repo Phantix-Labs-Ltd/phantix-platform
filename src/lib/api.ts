@@ -21,15 +21,64 @@ export function mediaUrl(path?: string | null): string {
   return path.startsWith("/") ? path : `/${path}`;
 }
 
+// Tokens are kept in localStorage, not sessionStorage: an operator who leaves
+// the page — closes the tab, or restarts the browser — and comes back keeps the
+// session until the backend expires it. When it *has* expired, the app holds the
+// page under the "session has expired" card instead of bouncing to /login.
+// Falls back to sessionStorage where localStorage is unavailable (private mode).
+const tokenStore: Storage = (() => {
+  try {
+    const probe = "__platform_storage_probe__";
+    window.localStorage.setItem(probe, "1");
+    window.localStorage.removeItem(probe);
+    return window.localStorage;
+  } catch {
+    return window.sessionStorage;
+  }
+})();
+
+function readToken(key: string): string | null {
+  try { return tokenStore.getItem(key); } catch { return null; }
+}
+function writeToken(key: string, value: string | null): void {
+  try { value ? tokenStore.setItem(key, value) : tokenStore.removeItem(key); } catch { /* unavailable */ }
+}
+
+// The dual-control operate token is a short-lived elevation, not the session:
+// it stays per-tab (sessionStorage) so closing the tab ends the elevation even
+// though the signed-in session persists.
+function readSessionToken(key: string): string | null {
+  try { return window.sessionStorage.getItem(key); } catch { return null; }
+}
+function writeSessionToken(key: string, value: string | null): void {
+  try { value ? window.sessionStorage.setItem(key, value) : window.sessionStorage.removeItem(key); } catch { /* unavailable */ }
+}
+
+// One-time migration: these keys used to live in sessionStorage. Adopt any
+// existing session into the persistent store so the change does not sign every
+// already-signed-in operator out on their first load after deploy.
+for (const key of [
+  "platform_access_token",
+  "platform_org_user_token",
+  "platform_company_email",
+]) {
+  try {
+    if (!tokenStore.getItem(key)) {
+      const legacy = window.sessionStorage.getItem(key);
+      if (legacy) tokenStore.setItem(key, legacy);
+    }
+  } catch { /* unavailable */ }
+}
+
 export const tokens = {
-  get platform() { return sessionStorage.getItem("platform_access_token"); },
-  set platform(v: string | null) { v ? sessionStorage.setItem("platform_access_token", v) : sessionStorage.removeItem("platform_access_token"); },
-  get orgUser() { return sessionStorage.getItem("platform_org_user_token"); },
-  set orgUser(v: string | null) { v ? sessionStorage.setItem("platform_org_user_token", v) : sessionStorage.removeItem("platform_org_user_token"); },
-  get dualControl() { return sessionStorage.getItem("platform_dual_control"); },
-  set dualControl(v: string | null) { v ? sessionStorage.setItem("platform_dual_control", v) : sessionStorage.removeItem("platform_dual_control"); },
-  get email() { return sessionStorage.getItem("platform_company_email"); },
-  set email(v: string | null) { v ? sessionStorage.setItem("platform_company_email", v) : sessionStorage.removeItem("platform_company_email"); },
+  get platform() { return readToken("platform_access_token"); },
+  set platform(v: string | null) { writeToken("platform_access_token", v); },
+  get orgUser() { return readToken("platform_org_user_token"); },
+  set orgUser(v: string | null) { writeToken("platform_org_user_token", v); },
+  get dualControl() { return readSessionToken("platform_dual_control"); },
+  set dualControl(v: string | null) { writeSessionToken("platform_dual_control", v); },
+  get email() { return readToken("platform_company_email"); },
+  set email(v: string | null) { writeToken("platform_company_email", v); },
 };
 
 /** Read email claim from company JWT (payload is base64url JSON). */
