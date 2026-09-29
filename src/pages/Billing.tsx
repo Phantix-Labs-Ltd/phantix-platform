@@ -8,6 +8,7 @@ import { api, DEMO_MODE } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { formatNaira, timeAgo, cx, humanize } from "@/lib/utils";
 import { UPSELL_FEATURES, upsellFor, upsellPlanLabel } from "@/lib/upsell";
+import { readPlanChoice } from "@/lib/planChoice";
 
 interface Entitlements {
   billing_enforcement: { enabled: boolean; mode: string; environment: string; free_asset_cap?: number; free_org_user_cap?: number; free_report_formats?: string[] };
@@ -103,7 +104,14 @@ export default function Billing() {
   // Which self-serve plan is being bought. The backend prices per plan, so the
   // page must say which one — a single legacy price is what made "upgrade"
   // impossible before.
-  const [selectedPlan, setSelectedPlan] = useState<"starter" | "growth">("starter");
+  // Which plan is being bought. The setup wizard hands its choice over as
+  // ?plan=; the stored setup choice is the fallback so a direct visit still
+  // opens on the plan the operator picked.
+  const [selectedPlan, setSelectedPlan] = useState<"starter" | "growth">(() => {
+    const param = params.get("plan");
+    if (param === "growth" || param === "starter") return param;
+    return readPlanChoice() === "growth" ? "growth" : "starter";
+  });
   const [busy, setBusy] = useState(false);
   const [payingId, setPayingId] = useState<number | null>(null);
   const [showCoupon, setShowCoupon] = useState(false);

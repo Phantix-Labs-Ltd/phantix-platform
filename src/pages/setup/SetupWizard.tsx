@@ -4,23 +4,27 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ShieldCheck, Building2, MailCheck, Globe, CheckCircle2, Copy, ArrowRight,
   ArrowLeft, FileText, Landmark, UserCheck, Loader2, PartyPopper, Info, RefreshCw,
-  Users, Database,
+  Users, Database, CreditCard, Check,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { api, DEMO_MODE, emailFromToken } from "@/lib/api";
 import { cx, maskEmail } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import {
+  PLAN_CHOICES, isPaidPlan, planLabel, readPlanChoice, writePlanChoice, type PlanChoice,
+} from "@/lib/planChoice";
 
 const stepsMeta = [
   { id: 1, key: "privacy", label: "Privacy notice", icon: <ShieldCheck size={16} /> },
   { id: 2, key: "identity", label: "Company profile", icon: <Building2 size={16} />, optional: true },
   { id: 3, key: "otp", label: "Email verification", icon: <MailCheck size={16} /> },
   { id: 4, key: "verify", label: "Company verification", icon: <Globe size={16} />, optional: true },
-  { id: 5, key: "complete", label: "Complete", icon: <PartyPopper size={16} /> },
+  { id: 5, key: "plan", label: "Choose a plan", icon: <CreditCard size={16} /> },
+  { id: 6, key: "complete", label: "Complete", icon: <PartyPopper size={16} /> },
 ];
 
-/** Map server next_step → wizard step index (1---5). */
+/** Map server next_step → wizard step index (1---6). */
 function stepFromSetup(s: {
   privacy_accepted: boolean;
   identity_verified: boolean;
@@ -30,7 +34,7 @@ function stepFromSetup(s: {
   next_step: string | null;
   identity_saved: boolean;
 }): number {
-  if (s.setup_complete) return 5;
+  if (s.setup_complete) return 6;
   const ns = (s.next_step || "").toLowerCase();
   if (ns === "privacy" || !s.privacy_accepted) return 1;
   if (ns === "email_otp" || (!s.identity_verified && !s.email_verified)) {
@@ -96,6 +100,11 @@ export default function SetupWizard() {
   const [step, setStep] = useState(currentStep);
   useEffect(() => setStep(currentStep), [currentStep]);
 
+  // The plan picked during setup. Persisted so a refresh mid-wizard does not
+  // lose it, and so Billing can pre-select it once setup completes.
+  const [planChoice, setPlanChoice] = useState<PlanChoice>(() => readPlanChoice() ?? "free");
+  const [planConfirmed, setPlanConfirmed] = useState<boolean>(() => readPlanChoice() !== null);
+
   const progress = s.progress_percent || (s.setup_complete ? 100 : s.privacy_accepted && (s.identity_verified || s.email_verified) ? 66 : s.privacy_accepted ? 33 : 0);
 
   const stepDone = (id: number) => {
@@ -103,7 +112,8 @@ export default function SetupWizard() {
     if (id === 2) return s.identity_saved || s.identity_verified || s.email_verified;
     if (id === 3) return s.identity_verified || s.email_verified;
     if (id === 4) return s.company_verified || s.domain_dns_ok || s.domain_http_ok || s.cac_submitted || s.manual_review === "approved";
-    if (id === 5) return s.setup_complete;
+    if (id === 5) return planConfirmed;
+    if (id === 6) return s.setup_complete;
     return false;
   };
 
@@ -215,11 +225,22 @@ export default function SetupWizard() {
               {step === 2 && <IdentityStep onSkip={() => setStep(3)} onDone={() => setStep(3)} privacyNotice={privacyNotice} />}
               {step === 3 && <OtpStep privacyNotice={privacyNotice} />}
               {step === 4 && <VerifyStep onContinue={() => setStep(5)} privacyNotice={privacyNotice} />}
-              {step === 5 && <CompleteStep privacyNotice={privacyNotice} />}
+              {step === 5 && (
+                <PlanStep
+                  value={planChoice}
+                  onChange={setPlanChoice}
+                  onContinue={() => {
+                    writePlanChoice(planChoice);
+                    setPlanConfirmed(true);
+                    setStep(6);
+                  }}
+                />
+              )}
+              {step === 6 && <CompleteStep planChoice={planChoice} privacyNotice={privacyNotice} />}
             </motion.div>
           </AnimatePresence>
 
-          {step > 1 && step < 5 && (
+          {step > 1 && step < 6 && (
             <button type="button" onClick={() => setStep(step - 1)} className="mt-6 inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-200">
               <ArrowLeft size={15} /> Back
             </button>
@@ -274,7 +295,7 @@ function PrivacyStep({ privacyNotice }: { privacyNotice: Record<string, unknown>
 
   return (
     <div className="card p-7">
-      <StepTitle icon={<ShieldCheck size={18} />} kicker="Step 1 of 5 · required" title={title} />
+      <StepTitle icon={<ShieldCheck size={18} />} kicker="Step 1 of 6 · required" title={title} />
       <div
         ref={boxRef}
         onScroll={() => {
@@ -375,7 +396,7 @@ function IdentityStep({ onSkip, onDone, privacyNotice }: { onSkip: () => void; o
 
   return (
     <div className="card p-7">
-      <StepTitle icon={<Building2 size={18} />} kicker="Step 2 of 5 · optional" title="Company profile" />
+      <StepTitle icon={<Building2 size={18} />} kicker="Step 2 of 6 · optional" title="Company profile" />
       <p className="mt-2 text-sm text-slate-400">
         Legal details used on verification records and report covers. Website is used as the default for domain verification.
       </p>
@@ -500,7 +521,7 @@ function OtpStep({ privacyNotice }: { privacyNotice: Record<string, unknown> | n
 
   return (
     <div className="card p-7">
-      <StepTitle icon={<MailCheck size={18} />} kicker="Step 3 of 5 · required" title="Verify your sign-in email" />
+      <StepTitle icon={<MailCheck size={18} />} kicker="Step 3 of 6 · required" title="Verify your sign-in email" />
       <p className="mt-2 text-sm text-slate-400">
         We'll email a one-time code to <strong className="text-slate-200">{displayDest}</strong>. Email OTP only --- phone verification is not supported.
       </p>
@@ -595,7 +616,7 @@ function VerifyStep({ onContinue, privacyNotice }: { onContinue: () => void; pri
   return (
     <div className="space-y-4">
       <div className="card p-7">
-        <StepTitle icon={<Globe size={18} />} kicker="Step 4 of 5 · required" title="Prove company control" />
+        <StepTitle icon={<Globe size={18} />} kicker="Step 4 of 6 · required" title="Prove company control" />
         <p className="mt-2 text-sm text-slate-400">
           Choose any <strong>one</strong> mode to verify your company — usually the domain. Verification is required
           before setup can be completed, and you can switch modes at any time.
@@ -919,8 +940,121 @@ function VerifyStep({ onContinue, privacyNotice }: { onContinue: () => void; pri
   );
 }
 
-// ── Step 5: Complete ──────────────────────────────────────────────────────────
-function CompleteStep({ privacyNotice }: { privacyNotice: Record<string, unknown> | null }) {
+// ── Step 5: Choose a plan ─────────────────────────────────────────────────────
+type PlanPriceRow = { key: string; list_price_ngn: number | null };
+
+function PlanStep({
+  value,
+  onChange,
+  onContinue,
+}: {
+  value: PlanChoice;
+  onChange: (p: PlanChoice) => void;
+  onContinue: () => void;
+}) {
+  const [livePlans, setLivePlans] = useState<PlanPriceRow[] | null>(null);
+
+  // Live list prices when the API answers; the catalogue's own are the fallback.
+  useEffect(() => {
+    if (DEMO_MODE) return;
+    let alive = true;
+    api.get<unknown>("/billing/plans")
+      .then((raw) => {
+        if (!alive) return;
+        const list = Array.isArray(raw)
+          ? raw
+          : raw && typeof raw === "object" && Array.isArray((raw as { plans?: unknown }).plans)
+            ? (raw as { plans: unknown[] }).plans
+            : [];
+        setLivePlans(list as PlanPriceRow[]);
+      })
+      .catch(() => { /* fall back to the catalogue prices */ });
+    return () => { alive = false; };
+  }, []);
+
+  const priceFor = (key: PlanChoice, fallback: number | null) => {
+    const live = livePlans?.find((p) => p.key === key);
+    return typeof live?.list_price_ngn === "number" ? live.list_price_ngn : fallback;
+  };
+  const money = (n: number | null) =>
+    n === null ? "Custom" : n === 0 ? "Free" : `₦${n.toLocaleString()}`;
+
+  return (
+    <div className="card p-7">
+      <StepTitle icon={<CreditCard size={18} />} kicker="Step 5 of 6" title="Choose your plan" />
+      <p className="mt-3 text-sm leading-6 text-slate-400">
+        Pick the plan you want to start on. You can change it later from Billing — Free
+        needs no card, and paid plans are confirmed after setup.
+      </p>
+
+      <div className="mt-6 space-y-3">
+        {PLAN_CHOICES.map((p) => {
+          const active = value === p.key;
+          const price = priceFor(p.key, p.priceNgn);
+          return (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => onChange(p.key)}
+              aria-pressed={active}
+              className={cx(
+                "block w-full rounded-lg border p-4 text-left transition-colors",
+                active
+                  ? "border-gold-400/60 bg-gold-400/[0.06] ring-1 ring-gold-400/40"
+                  : "border-phantix-700/60 bg-phantix-950/50 hover:border-phantix-600",
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span
+                      aria-hidden
+                      className={cx(
+                        "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+                        active ? "border-gold-400 bg-gold-400 text-phantix-950" : "border-phantix-600",
+                      )}
+                    >
+                      {active && <Check size={10} />}
+                    </span>
+                    <span className="font-display text-base font-semibold text-white">{p.name}</span>
+                    {p.highlight && (
+                      <span className="rounded-full border border-gold-400/40 bg-gold-400/10 px-2 py-0.5 text-[11px] font-semibold text-gold-300">
+                        Most popular
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-[13px] leading-5 text-slate-400">{p.tagline}</p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="block font-display text-lg font-bold text-white">{money(price)}</span>
+                  <span className="block text-[12px] text-slate-500">{p.priceNote}</span>
+                </div>
+              </div>
+              <ul className="mt-3 grid gap-1.5 sm:grid-cols-2">
+                {p.features.map((f) => (
+                  <li key={f} className="flex items-start gap-1.5 text-[12px] leading-5 text-slate-400">
+                    <Check size={13} className="mt-0.5 shrink-0 text-emerald-400" />
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </button>
+          );
+        })}
+      </div>
+
+      <button type="button" onClick={onContinue} className="btn-primary mt-6 w-full !py-3.5">
+        Continue <ArrowRight size={15} />
+      </button>
+      <p className="mt-3 text-center text-xs text-slate-500">
+        Free starts immediately. Starter and Growth take you to Billing after setup to pay.
+      </p>
+    </div>
+  );
+}
+
+// ── Step 6: Complete ──────────────────────────────────────────────────────────
+function CompleteStep({ privacyNotice, planChoice }: { privacyNotice: Record<string, unknown> | null; planChoice: PlanChoice }) {
   const { state, completeSetup, toast } = useStore();
   const s = state.setup;
   const navigate = useNavigate();
@@ -946,9 +1080,15 @@ function CompleteStep({ privacyNotice }: { privacyNotice: Record<string, unknown
           <strong className="text-slate-200">{state.org.name}</strong> is live. Next: dual control, then your security database.
         </p>
         <div className="relative mt-7 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <button type="button" onClick={() => navigate("/users")} className="btn-primary !py-3">
-            <Users size={15} /> Set up dual control
-          </button>
+          {isPaidPlan(planChoice) ? (
+            <button type="button" onClick={() => navigate(`/billing?plan=${planChoice}`)} className="btn-primary !py-3">
+              <CreditCard size={15} /> Continue to payment
+            </button>
+          ) : (
+            <button type="button" onClick={() => navigate("/users")} className="btn-primary !py-3">
+              <Users size={15} /> Set up dual control
+            </button>
+          )}
           <button type="button" onClick={() => navigate("/connections")} className="btn-secondary !py-3">
             <Database size={15} /> Connect security DB
           </button>
@@ -969,11 +1109,12 @@ function CompleteStep({ privacyNotice }: { privacyNotice: Record<string, unknown
       ok: s.company_verified || s.domain_dns_ok || s.domain_http_ok || s.cac_submitted || s.manual_review === "approved",
       required: false,
     },
+    { label: `Plan — ${planLabel(planChoice)}`, ok: true, required: false },
   ];
 
   return (
     <div className="card p-7">
-      <StepTitle icon={<FileText size={18} />} kicker="Step 5 of 5" title="Review & complete" />
+      <StepTitle icon={<FileText size={18} />} kicker="Step 6 of 6" title="Review & complete" />
       <div className="mt-5 space-y-2.5">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between rounded-md border border-phantix-700/40 bg-phantix-950/50 px-4 py-3">
