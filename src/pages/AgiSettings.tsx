@@ -323,7 +323,7 @@ export default function AgiSettings() {
                   <p className="text-sm font-semibold text-slate-200">Usage agreement</p>
                   <p className="mt-0.5 text-xs leading-5 text-slate-500">
                     {bootstrap.agreement.accepted
-                      ? `Accepted (version ${bootstrap.agreement.version ?? "—"}).`
+                      ? `Accepted (version ${bootstrap.agreement.version ?? "Not set"}).`
                       : "A company admin must accept the Autonomous Agent usage agreement before any session can run."}
                   </p>
                 </div>
@@ -381,7 +381,7 @@ export default function AgiSettings() {
               <div>
                 <p className="text-sm font-semibold text-slate-200">{s?.enabled_for_org ? "Enabled for this org" : "Disabled"}</p>
                 <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                  {s?.enabled_for_org ? "Org users can start scoped AGI sessions after accepting the agreement." : "Enable so org users can run the Autonomous Pentest Agent."}
+                  {s?.enabled_for_org ? "Org users can start scoped AGI sessions after they accept the agreement." : "Enable so org users can run the Autonomous Pentest Agent."}
                 </p>
               </div>
               <button onClick={() => toggle("enabled_for_org")} disabled={saving} aria-label="Toggle AGI">
@@ -481,7 +481,7 @@ export default function AgiSettings() {
               <div className="flex items-center justify-between gap-3 rounded-lg border border-phantix-700/40 px-3 py-2.5">
                 <div>
                   <p className="text-xs font-semibold text-slate-200">Default environment</p>
-                  <p className="text-[12px] text-slate-500">Pre-filled when creating engagements</p>
+                  <p className="text-[12px] text-slate-500">Pre-filled when you create an engagement</p>
                 </div>
                 <select
                   value={s?.default_target_environment ?? "staging"}
@@ -534,13 +534,13 @@ export default function AgiSettings() {
           <Card>
             <CardHeader
               title="Test accounts"
-              subtitle="Reusable login + registration credentials AGI injects into sessions (passwords encrypted, never returned)"
+              subtitle="Reusable login and registration credentials that AGI injects into sessions. Passwords are encrypted and never returned"
               action={
                 <button onClick={() => setAccountModal({ open: true, editing: null })} className="btn-primary !px-3 !py-1.5 !text-xs"><Plus size={13} className="mr-1 inline" /> Add account</button>
               }
             />
             {bootstrap?.test_accounts.length === 0 ? (
-              <EmptyState icon={<KeyRound size={22} />} title="No test accounts" body="Add reusable test login / registration credentials so AGI can use them automatically per environment." />
+              <EmptyState icon={<KeyRound size={22} />} title="No test accounts" body="Add reusable login and registration credentials so that AGI can use them automatically in each environment." />
             ) : (
               <div className="-mx-5 -mb-5 overflow-x-auto">
                 <table className="w-full">
@@ -572,7 +572,7 @@ export default function AgiSettings() {
                             className="flex max-w-[22rem] items-center gap-1.5 truncate text-[13px] text-slate-400"
                             title={[a.login_url && `login: ${a.login_url}`, a.register_url && `register: ${a.register_url}`, `${a.password_set ? "password set" : "no password"} · OTP ${humanize(a.otp_mode)}`].filter(Boolean).join("\n")}
                           >
-                            <KeyRound size={11} className="shrink-0" /> <span className="truncate">{a.username || a.email || "—"}</span>
+                            <KeyRound size={11} className="shrink-0" /> <span className="truncate">{a.username || a.email || "Not set"}</span>
                             <span className="text-slate-600">·</span>
                             <Lock size={11} className="shrink-0" /> {a.password_set ? "set" : "none"}
                             {a.login_url && <Globe2 size={11} className="shrink-0 text-gold-400" aria-label="Has login URL" />}
@@ -580,7 +580,7 @@ export default function AgiSettings() {
                           </span>
                         </td>
                         <td className="td">
-                          {a.is_default ? <span className="chip border-gold-400/40 bg-gold-400/10 text-[12px] text-gold-300"><Star size={10} className="mr-1 inline" /> default</span> : <span className="text-xs text-slate-600">—</span>}
+                          {a.is_default ? <span className="chip border-gold-400/40 bg-gold-400/10 text-[12px] text-gold-300"><Star size={10} className="mr-1 inline" /> default</span> : <span className="text-xs text-slate-600">Not set</span>}
                         </td>
                         <td className="td text-right">
                           <div className="flex flex-wrap justify-end items-center gap-1.5">
@@ -649,7 +649,7 @@ function TestAccountModal({
   const field = "w-full rounded-lg border border-phantix-700/50 bg-phantix-950/60 px-3 py-2 text-xs text-slate-200 outline-none placeholder:text-slate-600 focus:border-gold-400/40";
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? `Edit test account — ${editing.label}` : "Add test account"} wide>
+    <Modal open={open} onClose={onClose} title={editing ? `Edit test account: ${editing.label}` : "Add test account"} wide>
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -709,7 +709,7 @@ function TestAccountModal({
             Password {editing ? "(leave blank to keep current)" : "*"}
           </label>
           <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="••••••••" className={field} />
-          {editing?.password_set && <p className="mt-1 text-[12px] text-slate-500">Current password is stored — it is never shown.</p>}
+          {editing?.password_set && <p className="mt-1 text-[12px] text-slate-500">Current password is stored. It is never shown.</p>}
         </div>
 
         <div>

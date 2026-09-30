@@ -126,8 +126,8 @@ export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
   llc: "Limited liability company (LLC)",
   partnership: "Partnership",
   sole_proprietorship: "Sole proprietorship",
-  ngo: "NGO / nonprofit",
-  government: "Government / public sector",
+  ngo: "NGO or nonprofit",
+  government: "Government or public sector",
   startup: "Startup",
   other: "Other",
 };

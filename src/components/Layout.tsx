@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useSidebarCollapsed } from "@/lib/useSidebarCollapsed";
-import { DEMO_MODE, AGI_ENABLED } from "@/lib/api";
+import { DEMO_MODE, AGI_ENABLED, publicDetailCopy } from "@/lib/api";
 import { APP_URL } from "@/lib/links";
 import { cx } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -49,8 +49,8 @@ const baseNavSections: { label: string; items: (NavLeafItem | NavDropdownItem)[]
   {
     label: "Organization",
     items: [
-      { to: "/identity", label: "Identity & Keys", icon: <KeyRound size={17} /> },
-      { to: "/users", label: "People & Control", icon: <Users size={17} /> },
+      { to: "/identity", label: "Identity and Keys", icon: <KeyRound size={17} /> },
+      { to: "/users", label: "People and Control", icon: <Users size={17} /> },
       { to: "/connections", label: "Security Database", icon: <Database size={17} /> },
       { to: "/applications", label: "Applications", icon: <LayoutGrid size={17} /> },
       { type: "dropdown", label: "More Organization", icon: <MoreHorizontal size={17} />, items: moreOrganizationSubItems },
@@ -212,11 +212,11 @@ export default function Layout() {
       const timeoutMs = getTimeoutMs();
       if (idle >= timeoutMs) {
         expired = true;
-        toast("warning", "Session expired", "You have been logged out due to a long period of inactivity. Please sign in again.");
+        toast("warning", "Session expired", "The session ended because of a long period of inactivity. Sign in again.");
         expireSession();
       } else if (idle >= (timeoutMs - WARNING_BEFORE_MS) && !warned) {
         warned = true;
-        toast("info", "Session expiring soon", `You will be logged out in ${Math.round(WARNING_BEFORE_MS / 60000)} minutes due to inactivity.`);
+        toast("info", "Session expiring soon", `The session will end in ${Math.round(WARNING_BEFORE_MS / 60000)} minutes because of inactivity.`);
       }
     };
 
@@ -234,8 +234,9 @@ export default function Layout() {
   // Catch billing-required 402 responses and show upgrade prompt
   useEffect(() => {
     const handler = (e: Event) => {
-      const msg = (e as CustomEvent).detail as string;
-      toast("warning", "Upgrade required", `${msg} --- visit Billing to subscribe or redeem a code.`);
+      // The event carries the backend's upgrade text; normalize it before display.
+      const msg = publicDetailCopy((e as CustomEvent).detail) || "This feature needs an upgrade.";
+      toast("warning", "Upgrade required", `${msg} Visit Billing to subscribe or redeem a code.`);
     };
     window.addEventListener("phantix:billing-required", handler);
     return () => window.removeEventListener("phantix:billing-required", handler);
@@ -415,7 +416,7 @@ export default function Layout() {
               <button
                 onClick={() => navigate("/connections")}
                 title="Security DB not connected"
-                aria-label="Security DB not connected — connect it"
+                aria-label="Security database not connected. Connect it"
                 className="chip whitespace-nowrap border-severity-medium/40 bg-severity-medium/10 text-severity-medium transition-colors hover:bg-severity-medium/20"
               >
                 <Database size={12} /> <span className="hidden md:inline">Security DB · not connected</span>

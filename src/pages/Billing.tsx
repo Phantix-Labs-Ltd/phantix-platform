@@ -8,6 +8,7 @@ import { api, DEMO_MODE } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { formatNaira, timeAgo, cx, humanize } from "@/lib/utils";
 import { UPSELL_FEATURES, upsellFor, upsellPlanLabel } from "@/lib/upsell";
+import { readPlanChoice } from "@/lib/planChoice";
 
 interface Entitlements {
   billing_enforcement: { enabled: boolean; mode: string; environment: string; free_asset_cap?: number; free_org_user_cap?: number; free_report_formats?: string[] };
@@ -103,7 +104,14 @@ export default function Billing() {
   // Which self-serve plan is being bought. The backend prices per plan, so the
   // page must say which one — a single legacy price is what made "upgrade"
   // impossible before.
-  const [selectedPlan, setSelectedPlan] = useState<"starter" | "growth">("starter");
+  // Which plan is being bought. The setup wizard hands its choice over as
+  // ?plan=; the stored setup choice is the fallback so a direct visit still
+  // opens on the plan the operator picked.
+  const [selectedPlan, setSelectedPlan] = useState<"starter" | "growth">(() => {
+    const param = params.get("plan");
+    if (param === "growth" || param === "starter") return param;
+    return readPlanChoice() === "growth" ? "growth" : "starter";
+  });
   const [busy, setBusy] = useState(false);
   const [payingId, setPayingId] = useState<number | null>(null);
   const [showCoupon, setShowCoupon] = useState(false);
@@ -222,7 +230,7 @@ export default function Billing() {
           ...(gatewayPublicKey ? {} : {}),
         }, { dualControl: true });
         if (initRes?.authorization_url) window.location.href = initRes.authorization_url;
-        else toast("info", "Paystack", `Access code: ${initRes?.access_code ?? "N/A"} — complete payment then click Verify below`);
+        else toast("info", "Paystack", `Access code: ${initRes?.access_code ?? "Not available"}. Complete the payment, then click Verify below`);
       }
     } catch (e) { toast("error", "Subscribe failed", e instanceof Error ? e.message : ""); }
     finally { setBusy(false); }
@@ -247,7 +255,7 @@ export default function Billing() {
         try { sessionStorage.setItem(PENDING_PAYMENT_KEY, String(paymentId)); } catch { /* ignore */ }
       }
       if (res?.authorization_url) window.location.href = res.authorization_url;
-      else if (res?.access_code) toast("info", "Paystack", `Access code: ${res.access_code} — complete payment then click Verify`);
+      else if (res?.access_code) toast("info", "Paystack", `Access code: ${res.access_code}. Complete the payment, then click Verify`);
       else toast("error", "Top-up failed", "No Paystack session returned");
     } catch (e) {
       toast("error", "Top-up failed", e instanceof Error ? e.message : "");
@@ -266,7 +274,7 @@ export default function Billing() {
 
   const handleCancel = async () => {
     if (!(await requireDualControl("Cancelling the subscription requires a dual-control operate session."))) return;
-    try { await api.post("/billing/subscription/cancel", {}, { dualControl: true }); toast("warning", "Cancelled", "Auto-renew cancelled — access continues to period end"); setShowCancelConfirm(false); loadData(); } catch (e) { toast("error", "Failed"); }
+    try { await api.post("/billing/subscription/cancel", {}, { dualControl: true }); toast("warning", "Cancelled", "Auto-renew cancelled. Access continues to the end of the period"); setShowCancelConfirm(false); loadData(); } catch (e) { toast("error", "Failed"); }
   };
 
   if (loading) {
@@ -301,7 +309,7 @@ export default function Billing() {
   const featureList = (isPremium
     ? (activePlan?.features?.length ? activePlan.features : growthPlan?.features || starterPlan?.features)
     : plans.find((p) => p.key === "free")?.features)
-    ?? ["All product modules", "Unlimited campaigns & scans", "Verified-only PDF/DOCX reports", "Dual-control + audit exports", "WA/Telegram alert channels", "AI-assisted remediation"];
+    ?? ["All product modules", "Unlimited campaigns and scans", "Verified-only PDF and DOCX reports", "Dual-control and audit exports", "WhatsApp and Telegram alert channels", "AI-assisted remediation"];
 
   const enforcementOn = entitlements?.billing_enforcement?.enabled === true;
   const ALL_REPORT_FORMATS = ["json", "csv", "markdown", "pdf", "docx", "xlsx", "html", "pptx"];
@@ -437,15 +445,15 @@ export default function Billing() {
             <div className="mt-4 grid grid-cols-3 gap-2.5 border-t border-phantix-800/60 pt-4">
               <BillingStat
                 label="Free assets left"
-                value={entitlements.assets_remaining_free == null ? "—" : String(entitlements.assets_remaining_free)}
+                value={entitlements.assets_remaining_free == null ? "Not set" : String(entitlements.assets_remaining_free)}
                 tone={entitlements.assets_remaining_free === 0 ? "warn" : "plain"}
               />
               <BillingStat
                 label="Free users left"
-                value={entitlements.org_users_remaining_free == null ? "—" : String(entitlements.org_users_remaining_free)}
+                value={entitlements.org_users_remaining_free == null ? "Not set" : String(entitlements.org_users_remaining_free)}
                 tone={entitlements.org_users_remaining_free === 0 ? "warn" : "plain"}
               />
-              <BillingStat label="Credits / month" value={credits?.ai_credits_mo != null ? String(credits.ai_credits_mo) : "—"} tone="plain" />
+              <BillingStat label="Credits per month" value={credits?.ai_credits_mo != null ? String(credits.ai_credits_mo) : "Not set"} tone="plain" />
             </div>
           )}
         </Card>
@@ -498,7 +506,7 @@ export default function Billing() {
                       <p className="mt-0.5 text-[11px] text-slate-500">{price.note}</p>
                     </>
                   ) : (
-                    <p className="font-display text-lg font-bold text-slate-500">—</p>
+                    <p className="font-display text-lg font-bold text-slate-500">Not set</p>
                   )}
                 </div>
                 <ul className="mt-3 flex-1 space-y-1.5">
@@ -549,7 +557,7 @@ export default function Billing() {
                   {credits.low && !credits.exhausted && <span className="chip text-[11px] border-amber-400/30 bg-amber-400/10 text-amber-300">Low</span>}
                 </>
               ) : (
-                <span className="text-xs text-slate-500">Balance unavailable — refresh after signing in with an organisation session.</span>
+                <span className="text-xs text-slate-500">Balance unavailable. Refresh after you sign in with an organization session.</span>
               )}
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -619,7 +627,7 @@ export default function Billing() {
             ))}
           </div>
           <p className="mt-2 text-xs text-slate-500">
-            PDF, DOCX, XLSX, HTML, PPTX, JSON, CSV and Markdown are available on every plan, Free included — reporting is never the paid lever.
+            PDF, DOCX, XLSX, HTML, PPTX, JSON, CSV and Markdown are available on every plan, Free included. Reporting is never the paid lever.
           </p>
         </CollapsibleCard>
       </motion.div>

@@ -25,13 +25,13 @@ export function buildProfileChecklist(org: any, setup: any): Item[] {
     },
     {
       key: "industry",
-      label: "Industry & company size",
+      label: "Industry and company size",
       done: has(org?.industry) && has(org?.employee_count_range),
       hint: "Industry and headcount band",
     },
     {
       key: "web",
-      label: "Website & description",
+      label: "Website and description",
       done: has(org?.website) && has(org?.description),
       hint: "Public website and a short description",
     },
@@ -101,7 +101,7 @@ export default function ProfileCompletionNotice({ className }: { className?: str
           <div className="min-w-0 flex-1">
             <p className="font-semibold text-slate-100">Company profile {pct}% complete</p>
             <p className="text-sm text-slate-400">
-              {missing.length} item{missing.length === 1 ? "" : "s"} still needed — verification and branding unlock
+              {missing.length} item{missing.length === 1 ? "" : "s"} still needed. Verification and branding unlock
               the full platform experience.
             </p>
             <div className="mt-2 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-phantix-800/80">

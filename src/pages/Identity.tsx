@@ -17,20 +17,20 @@ import { timeAgo, cx, humanize } from "@/lib/utils";
 
 /** Allowed by PUT /organizations/me/preferred-services (API enum). */
 const DEFAULT_SERVICE_CATALOG = [
-  { key: "penetration_testing", name: "Penetration testing", desc: "Engagement-style assessments & VAPT" },
-  { key: "vulnerability_management", name: "Vulnerability management", desc: "Continuous vuln discovery & tracking" },
+  { key: "penetration_testing", name: "Penetration testing", desc: "Engagement-style assessments and VAPT" },
+  { key: "vulnerability_management", name: "Vulnerability management", desc: "Continuous vulnerability discovery and management" },
   { key: "red_team", name: "Red team", desc: "Adversary simulation" },
-  { key: "blue_team", name: "Blue team", desc: "Detection & defense operations" },
+  { key: "blue_team", name: "Blue team", desc: "Detection and defense operations" },
   { key: "purple_team", name: "Purple team", desc: "Collaborative attack/defense" },
   { key: "mssp", name: "MSSP", desc: "Managed security service provider" },
   { key: "soc_as_a_service", name: "SOC as a service", desc: "Outsourced security operations centre" },
   { key: "incident_response", name: "Incident response", desc: "IR retainers and playbooks" },
   { key: "threat_intelligence", name: "Threat intelligence", desc: "Intel feeds and analysis" },
   { key: "security_awareness", name: "Security awareness", desc: "Training and phishing simulations" },
-  { key: "compliance_audit", name: "Compliance & audit", desc: "Frameworks, GRC, evidence" },
+  { key: "compliance_audit", name: "Compliance and audit", desc: "Frameworks, GRC, evidence" },
   { key: "cloud_security", name: "Cloud security", desc: "CSPM and cloud posture" },
   { key: "application_security", name: "Application security", desc: "AppSec and secure SDLC" },
-  { key: "ot_security", name: "OT security", desc: "Industrial / operational technology" },
+  { key: "ot_security", name: "OT security", desc: "Industrial and operational technology" },
   { key: "other", name: "Other", desc: "Custom or unlisted services" },
 ];
 
@@ -118,7 +118,7 @@ export default function Identity() {
       toast("success", "Logo uploaded", "Your logo now appears on report covers and footers.");
     } catch (err) {
       const st = (err as { status?: number })?.status;
-      toast("error", st === 502 || st === 503 ? "Storage unavailable" : "Upload failed", st === 502 || st === 503 ? "Storage unavailable — retry." : err instanceof Error ? err.message : "Could not upload logo");
+      toast("error", st === 502 || st === 503 ? "Storage unavailable" : "Upload failed", st === 502 || st === 503 ? "Storage unavailable. Try again." : err instanceof Error ? err.message : "Could not upload logo");
     } finally {
       setLogoBusy(false);
       if (logoInputRef.current) logoInputRef.current.value = "";
@@ -142,7 +142,7 @@ export default function Identity() {
       toast("success", "Logo removed", "Your logo was removed from reports and footers.");
     } catch (err) {
       const st = (err as { status?: number })?.status;
-      toast("error", st === 502 || st === 503 ? "Storage unavailable" : "Remove failed", st === 502 || st === 503 ? "Storage unavailable — retry." : err instanceof Error ? err.message : "Could not remove logo");
+      toast("error", st === 502 || st === 503 ? "Storage unavailable" : "Remove failed", st === 502 || st === 503 ? "Storage unavailable. Try again." : err instanceof Error ? err.message : "Could not remove logo");
     } finally {
       setLogoBusy(false);
     }
@@ -207,7 +207,7 @@ export default function Identity() {
       if (normalized.infrastructure_types.length !== (form.infrastructure_types ?? []).length) {
         setForm(normalized);
       }
-      toast("success", "Profile saved", "Your company profile has been updated.");
+      toast("success", "Profile saved", "SecureGraph updated your company profile.");
     } catch (err) {
       toast("error", "Save failed", err instanceof Error ? err.message : "Could not update profile");
     } finally {
@@ -218,8 +218,8 @@ export default function Identity() {
   return (
     <div>
       <PageHeader
-        title="Identity & profile"
-        description="Your company profile — identity, contacts, security posture, branding, and service key."
+        title="Identity and profile"
+        description="Your company profile: identity, contacts, security posture, branding, and service key."
         actions={<DocLink docId="howto-platform-08" label="Identity how-to" />}
       />
 
@@ -230,8 +230,8 @@ export default function Identity() {
           { id: "overview", label: "Overview" },
           { id: "profile", label: "Company profile" },
           { id: "security", label: "Security posture" },
-          { id: "keys", label: "Keys & branding" },
-          { id: "privacy", label: "Privacy & data" },
+          { id: "keys", label: "Keys and branding" },
+          { id: "privacy", label: "Privacy and data" },
         ]}
         active={tab}
         onChange={setTab}
@@ -278,7 +278,7 @@ export default function Identity() {
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
             <Card>
-              <CardHeader title="Primary contact" subtitle="Registration / security contact" action={<User size={16} className="text-slate-500" />} />
+              <CardHeader title="Primary contact" subtitle="Registration and security contact" action={<User size={16} className="text-slate-500" />} />
               {state.org.primary_contact ? (
                 <div className="space-y-2 text-sm text-slate-300">
                   <p className="font-semibold text-slate-100 capitalize">
@@ -350,7 +350,7 @@ export default function Identity() {
               <Field label="Timezone"><input className="input" placeholder="Africa/Lagos" value={form.timezone ?? ""} onChange={(e) => set("timezone", e.target.value || null)} /></Field>
               <Field label="Country"><input className="input" value={form.country} onChange={(e) => set("country", e.target.value)} /></Field>
               <Field label="City"><input className="input" value={form.city ?? ""} onChange={(e) => set("city", e.target.value || null)} /></Field>
-              <Field label="State / province"><input className="input" value={form.state_province ?? ""} onChange={(e) => set("state_province", e.target.value || null)} /></Field>
+              <Field label="State or province"><input className="input" value={form.state_province ?? ""} onChange={(e) => set("state_province", e.target.value || null)} /></Field>
               <Field label="Postal code"><input className="input" value={form.postal_code ?? ""} onChange={(e) => set("postal_code", e.target.value || null)} /></Field>
               <div className="sm:col-span-2">
                 <Field label="Address line 1"><input className="input" value={form.address_line1 ?? ""} onChange={(e) => set("address_line1", e.target.value || null)} /></Field>
@@ -400,7 +400,7 @@ export default function Identity() {
       {tab === "security" && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
           <Card>
-            <CardHeader title="Security & compliance posture" subtitle="Used for recommendations and experience" />
+            <CardHeader title="Security and compliance posture" subtitle="Used for recommendations and experience" />
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Security mailbox"><input className="input" value={form.security_mailbox ?? ""} onChange={(e) => set("security_mailbox", e.target.value || null)} /></Field>
               <Field label="Security maturity">
@@ -513,7 +513,7 @@ export default function Identity() {
 
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
             <Card>
-              <CardHeader title="Report branding" subtitle="PNG, JPEG, WebP or SVG — up to 2 MB, shown on report covers and footers" action={<ImagePlus size={16} className="text-slate-500" />} />
+              <CardHeader title="Report branding" subtitle="PNG, JPEG, WebP or SVG. Up to 2 MB, shown on report covers and footers" action={<ImagePlus size={16} className="text-slate-500" />} />
               <div className="flex items-center gap-4 rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3.5">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-md bg-phantix-800/70">
                   {state.org.logo_url ? (
@@ -556,7 +556,7 @@ export default function Identity() {
           {/* Right: preferred services only */}
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
             <Card>
-              <CardHeader title="Preferred services" subtitle="Shapes navigation & modules" action={<Layers size={16} className="text-slate-500" />} />
+              <CardHeader title="Preferred services" subtitle="Shapes navigation and modules" action={<Layers size={16} className="text-slate-500" />} />
               <div className="space-y-2">
                 {catalogItems.map((s) => {
                   const on = preferred.includes(s.key);
@@ -635,7 +635,7 @@ export default function Identity() {
               setKeyModal(null);
             }}
           >
-            Copy & close
+            Copy and close
           </button>
         </div>
       </Modal>
@@ -772,7 +772,7 @@ function DataSubjectPanel() {
         details: details.trim() || null,
         contact_email: contactEmail.trim() || null,
       });
-      toast("success", "Request received", `${DSR_TYPES.find((t) => t.id === type)?.label} — we will respond on the contact details on file.`);
+      toast("success", "Request received", `${DSR_TYPES.find((t) => t.id === type)?.label}. We will respond on the contact details on file.`);
       setType(null);
       setDetails("");
       refresh();
@@ -809,7 +809,7 @@ function DataSubjectPanel() {
         <Card>
           <CardHeader
             title="Raise a data subject request"
-            subtitle={noticeVersion ? `Privacy notice v${noticeVersion}` : "NDPA §34–37 — in product, not by email"}
+            subtitle={noticeVersion ? `Privacy notice v${noticeVersion}` : "NDPA §34–37. In product, not by email"}
             action={
               <button type="button" onClick={() => void exportData()} disabled={exporting} className="btn-secondary !px-3 !py-1.5 text-xs">
                 {exporting ? <Loader2 size={13} className="mr-1.5 inline animate-spin" /> : <Download size={13} className="mr-1.5 inline" />}

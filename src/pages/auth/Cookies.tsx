@@ -16,7 +16,7 @@ export default function Cookies() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <PageHeader
-        title="Cookies & analytics"
+        title="Cookies and analytics"
         description="What we measure, why, and how to change your choice."
       />
 
@@ -41,7 +41,7 @@ export default function Cookies() {
             <li>Page path and the referring page</li>
             <li>Coarse device info: screen size, browser language and time zone</li>
             <li>Campaign parameters (UTM) when a link carries them</li>
-            <li>A random per-session id kept in <code>sessionStorage</code> — not a cookie</li>
+            <li>A random per-session id kept in <code>sessionStorage</code>. It is not a cookie</li>
             <li>Severity-level event counts for product features you use</li>
           </ul>
           <p className="mt-3 text-sm leading-6 text-slate-400">
@@ -72,7 +72,7 @@ export default function Cookies() {
         </Card>
 
         <Card>
-          <CardHeader title="Retention & contact" subtitle="Governed by the privacy notice" />
+          <CardHeader title="Retention and contact" subtitle="Governed by the privacy notice" />
           <p className="text-sm leading-6 text-slate-300">
             Analytics records are retained in aggregate for product measurement and are not used to identify
             you. For access, correction or erasure requests, use the data-subject request tool in

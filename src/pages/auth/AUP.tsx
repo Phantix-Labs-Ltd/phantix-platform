@@ -71,7 +71,7 @@ export default function AcceptableUsePolicy() {
             <BrandMark className="h-16 w-16" />
             <div>
               <h1 className="font-display text-3xl font-bold text-white">{aup?.title || "Acceptable Use Policy"}</h1>
-              <p className="text-sm text-slate-500">{aup?.effective || aup?.summary || "Rules for using the SecureGraph platform lawfully and only on authorized systems"}</p>
+              <p className="text-sm text-slate-500">{aup?.effective || aup?.summary || "Rules for the lawful use of the SecureGraph platform, and only on authorized systems."}</p>
               {aup?.version && <p className="mt-1 text-[13px] font-mono text-slate-600">version {aup.version}</p>}
             </div>
           </div>
@@ -122,12 +122,12 @@ export default function AcceptableUsePolicy() {
                   "Unauthorized access to any computer system or network (Cybercrimes Act, s.6)",
                   "Denial-of-service or disruption of systems (s.8)",
                   "Distribution of malware, ransomware, or viruses (s.32(3))",
-                  "Phishing or obtaining credentials by deception (s.32)",
+                  "Phishing, or the collection of credentials by deception (s.32)",
                   "Password or credential trafficking and evasion devices (s.28)",
-                  "Cyberstalking or sending offensive messages (s.24)",
+                  "Cyberstalking, or the distribution of offensive messages (s.24)",
                   "Data exfiltration you are not authorized to access",
                   "Scanning Critical National Information Infrastructure without lawful authority",
-                  "Circumventing or interfering with the platform's own security controls",
+                  "Circumvention or interference with the security controls of the platform",
                 ].map((t) => (
                   <li key={t} className="flex items-start gap-2.5 text-sm text-slate-300">
                     <Ban size={14} className="mt-0.5 shrink-0 text-severity-medium" /> {t}

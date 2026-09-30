@@ -102,12 +102,12 @@ export default function ApplicationAccessModal({
         <div className="space-y-4">
           <p className="text-xs leading-5 text-slate-400">
             One row per application. The role selected in a row decides what this person may do{" "}
-            <strong className="text-slate-200">in that application</strong> — the exact privileges
+            <strong className="text-slate-200">in that application</strong>. It shows the exact privileges
             it grants are listed beneath the row (✓ granted, – not granted). Rows left on{" "}
             <strong className="text-slate-200">global role</strong> (
             <span className="font-mono text-gold-300">{globalRole}</span>) fall back to the
             user&apos;s org-wide role. To change what a role grants <em>org-wide</em>, edit it
-            under <strong className="text-slate-200">Roles &amp; privileges</strong> — every user
+            under <strong className="text-slate-200">Roles and privileges</strong>. Every user
             holding the role is affected.
           </p>
 

@@ -70,7 +70,7 @@ export default function Terms() {
           <div className="flex items-center gap-4">
             <BrandMark className="h-16 w-16" />
             <div>
-              <h1 className="font-display text-3xl font-bold text-white">{terms?.title || "Terms of Service & Acceptable Use"}</h1>
+              <h1 className="font-display text-3xl font-bold text-white">{terms?.title || "Terms of Service and Acceptable Use"}</h1>
               <p className="text-sm text-slate-500">{terms?.effective || terms?.summary || "The agreement that governs your use of the SecureGraph platform"}</p>
               {terms?.version && <p className="mt-1 text-[13px] font-mono text-slate-600">version {terms.version}</p>}
             </div>
@@ -148,11 +148,11 @@ export default function Terms() {
             <div className="card p-6">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-md bg-phantix-700/50 text-phantix-300"><FileText size={18} /></span>
-                <h2 className="font-display text-lg font-semibold text-white">Accounts, billing & liability</h2>
+                <h2 className="font-display text-lg font-semibold text-white">Accounts, billing and liability</h2>
               </div>
               <ul className="mt-4 space-y-2.5">
                 {[
-                  "You are responsible for activity under your account and for keeping credentials secure",
+                  "You are responsible for activity under your account and for the security of your credentials",
                   "Subscriptions renew at the agreed cycle until cancelled; project fees are billed per statement of work",
                   "Security testing cannot guarantee discovery of all vulnerabilities; the platform is provided 'as is'",
                   "These terms are governed by the laws of the Federal Republic of Nigeria",

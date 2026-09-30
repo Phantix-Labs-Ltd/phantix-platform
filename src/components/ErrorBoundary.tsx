@@ -1,5 +1,6 @@
 import React from "react";
 import { ShieldAlert, RefreshCw } from "lucide-react";
+import { tokens } from "@/lib/api";
 
 type Props = { children: React.ReactNode };
 type State = { error: Error | null; info: React.ErrorInfo | null };
@@ -28,7 +29,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-white">Something went wrong</h1>
-                <p className="mt-1 text-xs text-slate-500">The UI crashed while rendering. Check the console for the component stack trace.</p>
+                <p className="mt-1 text-xs text-slate-500">The user interface crashed. Check the console for the component stack trace.</p>
               </div>
             </div>
             <pre className="my-3 max-h-40 overflow-auto rounded-md bg-phantix-950 p-3.5 text-[13px] text-severity-critical whitespace-pre-wrap">
@@ -47,9 +48,14 @@ export default class ErrorBoundary extends React.Component<Props, State> {
                 type="button"
                 className="btn-primary flex-1"
                 onClick={() => {
-                  try { sessionStorage.removeItem("platform_access_token"); } catch {}
-                  try { sessionStorage.removeItem("platform_org_user_token"); } catch {}
-                  try { sessionStorage.removeItem("platform_dual_control"); } catch {}
+                  // Clear through the token store so the persistent keys (not just
+                  // the legacy sessionStorage ones) are emptied.
+                  try {
+                    tokens.platform = null;
+                    tokens.orgUser = null;
+                    tokens.dualControl = null;
+                    tokens.email = null;
+                  } catch { /* storage unavailable */ }
                   window.location.href = "/login";
                 }}
               >

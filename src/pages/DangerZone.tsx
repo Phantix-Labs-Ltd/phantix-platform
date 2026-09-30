@@ -41,10 +41,10 @@ export default function DangerZone() {
         if (target.kind === "account") {
           toast("info", "Erasure request submitted", "SecureGraph staff will process your data-erasure request. You stay signed in until it is fulfilled.");
         } else {
-          toast("info", "Sent for approval", "This deletion has been filed for the authorizer's sign-off.");
+          toast("info", "Sent for approval", "An authorizer must sign off on this deletion.");
         }
       } else {
-        toast("success", "Deleted", target.kind === "account" ? "Your account has been deleted." : `${target.name} was removed.`);
+        toast("success", "Deleted", target.kind === "account" ? "SecureGraph deleted your account." : `${target.name} was removed.`);
       }
       setPending(null);
       if (target.kind === "account" && !res.pending) navigate("/login");
@@ -215,7 +215,7 @@ export default function DangerZone() {
                           <p className="text-[13px] text-slate-500">{u.email} · {u.title}</p>
                           {isSlot && (
                             <p className="mt-1 text-[13px] text-severity-medium">
-                              Assigned dual-control slot — reassign before deleting to avoid locking yourself out.
+                              Assigned dual-control slot. Reassign before you delete it, to avoid locking yourself out.
                             </p>
                           )}
                         </div>

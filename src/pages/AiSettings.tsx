@@ -365,7 +365,7 @@ export default function AiSettings() {
               reachable without scrolling. */}
           <CollapsibleCard
             title="Usage this month"
-            subtitle="Cost visibility — every call audited with prompt version + model"
+            subtitle="Cost visibility: every call is audited with the prompt version and model"
             defaultOpen={false}
           >
             <div className="flex flex-wrap items-end gap-8">
@@ -391,7 +391,7 @@ export default function AiSettings() {
             </div>
             {ai.ai_allowed === false && (
               <p className="mt-3 rounded-md border border-severity-medium/30 bg-severity-medium/10 px-3 py-2 text-[13px] text-severity-medium">
-                Budget reached for this cycle — AI calls are refused until credits are topped up or the cycle resets.
+                Budget reached for this cycle. AI calls are refused until credits are topped up or the cycle resets.
               </p>
             )}
             <div className="mt-5 space-y-2 text-xs leading-5 text-slate-400">
@@ -430,7 +430,7 @@ export default function AiSettings() {
             <button className="btn-secondary" disabled={freeSaving} onClick={() => setFreeModalOpen(false)}>Cancel</button>
             <button className="btn-primary" disabled={freeSaving} onClick={() => void enableFreeModels()}>
               {freeSaving ? <Loader2 size={14} className="mr-1.5 inline animate-spin" /> : <CheckCircle2 size={14} className="mr-1.5 inline" />}
-              I agree — enable free models
+              I agree. Enable free models.
             </button>
           </div>
         </div>

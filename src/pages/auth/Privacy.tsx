@@ -79,7 +79,7 @@ export default function Privacy() {
                 {highlights.map((h, i) => (
                   <li key={h.id ?? i} className="flex items-start gap-2.5 text-sm text-slate-300">
                     <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-400" />
-                    <span><strong className="text-slate-200">{h.label}</strong>{h.text ? ` — ${h.text}` : ""}</span>
+                    <span><strong className="text-slate-200">{h.label}</strong>{h.text ? `: ${h.text}` : ""}</span>
                   </li>
                 ))}
               </ul>
@@ -157,8 +157,8 @@ export default function Privacy() {
             <ul className="mt-4 space-y-2.5">
               {[
                 "Production application tables and business rows",
-                "Customer PII datasets --- config inspection reads catalogs and security metadata only",
-                "Document or collection contents in Mongo / Firestore --- names and ids only",
+                "Customer personal data sets. Config inspection reads catalogs and security metadata only",
+                "Document or collection contents in Mongo or Firestore. Names and IDs only",
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2.5 text-sm text-slate-300">
                   <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-severity-critical/80" /> {t}
@@ -170,7 +170,7 @@ export default function Privacy() {
           <div className="card p-6">
             <div className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-md bg-phantix-700/50 text-phantix-300"><KeyRound size={18} /></span>
-              <h2 className="font-display text-lg font-semibold text-white">Identity & verification</h2>
+              <h2 className="font-display text-lg font-semibold text-white">Identity and verification</h2>
             </div>
             <ul className="mt-4 space-y-2.5">
               {[

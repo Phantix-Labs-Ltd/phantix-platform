@@ -153,7 +153,7 @@ export default function Dashboard() {
               {[
                 ["Tenant ID", `#${state.org.id}`],
                 ["Slug", state.org.slug],
-                ["Creator", state.org.creator_user_id != null ? `#${state.org.creator_user_id}` : "—"],
+                ["Creator", state.org.creator_user_id != null ? `#${state.org.creator_user_id}` : "Not set"],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-center justify-between gap-3 rounded-md border border-phantix-700/40 bg-phantix-950/50 px-4 py-3">
                   <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-slate-500">{k}</span>
@@ -168,7 +168,7 @@ export default function Dashboard() {
               ))}
             </div>
             <Link to="/identity" className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-gold-400 hover:text-gold-300">
-              Manage identity & keys <ArrowRight size={12} />
+              Manage identity and keys <ArrowRight size={12} />
             </Link>
           </Card>
         </motion.div>

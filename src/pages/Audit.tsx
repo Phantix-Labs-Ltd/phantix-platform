@@ -72,14 +72,14 @@ function StatusPill({ status }: { status: string }) {
       color === "amber" && "border-amber-400/30 bg-amber-400/10 text-amber-300",
       color === "slate" && "border-slate-500/30 bg-slate-500/10 text-slate-400",
     )}>
-      <span className="h-1.5 w-1.5 rounded-full bg-current" /> {status || "—"}
+      <span className="h-1.5 w-1.5 rounded-full bg-current" /> {status || "Not set"}
     </span>
   );
 }
 
 /** Normalize an audit row into a short, stable display id. */
 function shortUid(uid: string): string {
-  return (uid || "").replace(/-/g, "").slice(0, 8).toUpperCase() || "—";
+  return (uid || "").replace(/-/g, "").slice(0, 8).toUpperCase() || "Not set";
 }
 
 export default function Audit() {
@@ -141,7 +141,7 @@ export default function Audit() {
     setExporting(true);
     try {
       await exportAuditCsv();
-      toast("success", "Export ready", "Audit CSV downloaded — every row carries initiator and authorizer names.");
+      toast("success", "Export ready", "Audit CSV downloaded. Every row carries an initiator and an authorizer name.");
     } catch (err) {
       toast("error", "Export failed", err instanceof Error ? err.message : "Could not download the audit trail");
     } finally {
@@ -159,7 +159,7 @@ export default function Audit() {
     <div>
       <PageHeader
         title="Audit trail"
-        description="Immutable platform-DB trail of user activities — every action with initiator, authorizer, status, and timeline for compliance."
+        description="Immutable audit trail of user activity. Every action has an initiator, an authorizer, a status and a timeline for compliance."
         actions={
           <div className="flex items-center gap-2">
             <DocLink docId="howto-platform-index" label="Platform how-to index" />
@@ -264,7 +264,7 @@ export default function Audit() {
                               {(e.initiator_name ?? "?").slice(0, 1)}
                             </span>
                             <span className="whitespace-nowrap text-[13px] text-slate-300">
-                              {e.initiator_name ?? "—"}
+                              {e.initiator_name ?? "Not set"}
                               {e.initiator_title && <span className="ml-1.5 text-slate-500">{e.initiator_title}</span>}
                             </span>
                           </div>
@@ -281,17 +281,17 @@ export default function Audit() {
                               </span>
                             </div>
                           ) : (
-                            <span className="text-[13px] text-slate-600">—</span>
+                            <span className="text-[13px] text-slate-600">Not set</span>
                           )}
                         </td>
-                        <td className="td"><StatusPill status={e.status || "—"} /></td>
+                        <td className="td"><StatusPill status={e.status || "Not set"} /></td>
                         <td
                           className="td whitespace-nowrap text-[13px] text-slate-400"
                           title={[e.created_at ? formatDateTime(e.created_at) : "", e.initiated_at && e.completed_at && e.initiated_at !== e.completed_at ? `started ${timeAgo(e.initiated_at)}` : ""].filter(Boolean).join(" · ")}
                         >
                           {timeAgo(e.created_at)}
                         </td>
-                        <td className="td font-mono text-[12px] text-slate-500">{e.ip_address ?? "—"}</td>
+                        <td className="td font-mono text-[12px] text-slate-500">{e.ip_address ?? "Not set"}</td>
                       </motion.tr>
                     );
                   })}
@@ -334,7 +334,7 @@ export default function Audit() {
       )}
 
       <p className="mt-4 text-xs text-slate-500">
-        Dual-control audit records are kept per organization — never written into your security database.
+        Dual-control audit records are kept per organization. They are never written into your security database.
       </p>
     </div>
   );

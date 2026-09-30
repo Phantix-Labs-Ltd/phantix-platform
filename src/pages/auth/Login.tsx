@@ -245,7 +245,7 @@ export default function Login() {
                       autoFocus
                     />
                     <button className="btn-primary w-full !py-3" disabled={busy || retryIn > 0 || code.length !== 6}>
-                      {busy ? "Verifying..." : retryIn > 0 ? `Try again in ${retryIn}s` : "Verify & sign in"}
+                      {busy ? "Verifying..." : retryIn > 0 ? `Try again in ${retryIn}s` : "Verify and sign in"}
                     </button>
                     <button type="button" onClick={() => void resend()} disabled={resending || retryIn > 0} className="w-full text-center text-xs text-slate-500 hover:text-slate-300">
                       {resending ? "Resending..." : "Resend code"}

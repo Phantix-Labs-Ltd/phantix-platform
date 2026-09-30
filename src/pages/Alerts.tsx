@@ -67,7 +67,7 @@ export default function Alerts() {
       <Tabs
         tabs={[
           { id: "log", label: "Delivery log", count: alerts.length },
-          { id: "channels", label: "Channels & SMTP" },
+          { id: "channels", label: "Channels and SMTP" },
         ]}
         active={tab}
         onChange={setTab}
@@ -151,7 +151,7 @@ export default function Alerts() {
                 className="!p-4"
                 defaultOpen={false}
                 title="Severity routing"
-                subtitle="Floors are enforced server-side — channel policies can only narrow them"
+                subtitle="Floors are enforced server-side. A channel policy can only narrow them"
               >
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
@@ -218,7 +218,7 @@ export default function Alerts() {
             </Card>
 
             <Card>
-              <CardHeader title="Channels" subtitle="WhatsApp (Meta Cloud) & Telegram (Bot API)" />
+              <CardHeader title="Channels" subtitle="WhatsApp through Meta Cloud and Telegram through the Bot API" />
               <div className="space-y-3">
                 <div className="flex items-center justify-between rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3.5">
                   <div>
