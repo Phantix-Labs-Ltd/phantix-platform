@@ -36,7 +36,7 @@ export default function Connections() {
   /** Dual control must be set up before managing DB connections. */
   const guard = async () => {
     if (!state.dualControl.configured) {
-      toast("warning", "Audit control required", "Set up audit control (People page) before managing database connections.");
+      toast("warning", "Audit control required", "Set up audit control on the People page before you manage database connections.");
       return false;
     }
     if (operate.unlocked) return true;
@@ -47,7 +47,7 @@ export default function Connections() {
     <div>
       <PageHeader
         title="Security database"
-        description="BYO dedicated database --- the bootstrap gate for scans, VAPT and findings. Config-inspection connections read security metadata only, never business rows."
+        description="Bring your own dedicated database. This is the bootstrap gate for scans, VAPT and findings. A config-inspection connection reads security metadata only, never business rows."
         actions={
           <>
             <DocLink docId="howto-platform-06" label="Connections how-to" />
@@ -81,7 +81,7 @@ export default function Connections() {
         <CollapsibleCard
           className="mb-5"
           title="Connection options"
-          subtitle="Engine-specific options beyond username / password"
+          subtitle="Engine-specific options beyond username and password"
           action={<Info size={16} className="text-slate-400" />}
           defaultOpen={false}
         >
@@ -149,7 +149,7 @@ export default function Connections() {
                         {humanize(c.connection_purpose)}
                       </td>
                       <td className="td whitespace-nowrap text-xs text-slate-500">
-                        {c.last_test_at ? `${c.last_test_ok ? "passed" : "failed"} ${timeAgo(c.last_test_at)}` : "—"}
+                        {c.last_test_at ? `${c.last_test_ok ? "passed" : "failed"} ${timeAgo(c.last_test_at)}` : "Not set"}
                       </td>
                       <td className="td"><StatusBadge status={c.bootstrap_status} /></td>
                       <td className="td text-right">
@@ -182,9 +182,9 @@ export default function Connections() {
                                 try {
                                   const boot = await bootstrapConnection(c.id);
                                   if (boot?.pending) {
-                                    toast("info", "Sent for approval", "Schema bootstrap is parked for an authorizer — approve it from Authorizations to finish.");
+                                    toast("info", "Sent for approval", "Schema bootstrap is parked for an authorizer. Approve it from Authorizations to finish.");
                                   } else {
-                                    toast("success", "Schema bootstrapped", "Security database ready --- assets, scans, findings, risks, evidence.");
+                                    toast("success", "Schema bootstrapped", "Security database ready: assets, scans, findings, risks, evidence.");
                                   }
                                 } catch (err) {
                                   toast("error", "Bootstrap failed", err instanceof Error ? err.message : "Bootstrap failed");
@@ -206,7 +206,7 @@ export default function Connections() {
                               try {
                                 const del = await deleteConnection(c.id);
                                 if (del?.pending) {
-                                  toast("info", "Sent for approval", "Connection removal is parked for an authorizer — approve it from Authorizations.");
+                                  toast("info", "Sent for approval", "Connection removal is parked for an authorizer. Approve it from Authorizations.");
                                 } else {
                                   toast("info", "Connection deleted");
                                 }
@@ -234,7 +234,7 @@ export default function Connections() {
           <div className="flex flex-wrap gap-2">
             {(() => {
               const list = DEMO_MODE
-                ? [["postgresql / supabase", true], ["sqlite", true], ["mysql / mariadb", true], ["mssql", false], ["mongodb", false], ["firestore", false]] as [string, boolean][]
+                ? [["postgresql or supabase", true], ["sqlite", true], ["mysql or mariadb", true], ["mssql", false], ["mongodb", false], ["firestore", false]] as [string, boolean][]
                 : drivers.length
                   ? drivers.map((d) => [d.db_type, d.live] as [string, boolean])
                   : [["loading drivers...", false] as [string, boolean]];
@@ -247,7 +247,7 @@ export default function Connections() {
           </div>
           <p className="mt-3 text-[13px] leading-4 text-slate-500">
             Credentials can be stored encrypted without the optional driver; live tests need the package. Connections
-            need more than username+password --- see connection-option-hints (ssl_mode, search_path, odbc_driver...).
+            need more than a username and password. See connection-option-hints: ssl_mode, search_path, odbc_driver.
           </p>
         </CollapsibleCard>
       </motion.div>
@@ -278,10 +278,10 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
         }
       }
       // No A record found --- pass original host (backend may handle it)
-      toast("warning", "No IPv4 record", `${host} could not be resolved --- passing as-is`);
+      toast("warning", "No IPv4 record", `${host} could not be resolved. SecureGraph passes it as is`);
       return host;
     } catch {
-      toast("warning", "DNS lookup failed", `Could not resolve ${host} --- passing as-is`);
+      toast("warning", "DNS lookup failed", `Could not resolve ${host}. SecureGraph passes it as is`);
       return host;
     } finally {
       setResolvingHost(null);
@@ -339,7 +339,7 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
           <div className="col-span-2 grid grid-cols-2 gap-2">
             {([
               ["security_data_storage", "Security data storage", "SecureGraph writes findings, assets and evidence to its own dedicated schema"],
-              ["config_inspection", "Config inspection", "Read-only security posture --- never business rows"],
+              ["config_inspection", "Config inspection", "Read-only security posture, never business rows"],
             ] as const).map(([v, label, desc]) => (
               <button
                 type="button"
@@ -365,7 +365,7 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
             <label className="label">Host</label>
             <input name="host" className="input font-mono" placeholder="10.20.0.14 or db.example.com" required />
             {resolvingHost && <p className="text-[12px] text-phantix-400 mt-1 animate-pulse-soft">Resolving {resolvingHost} → IPv4...</p>}
-            <p className="text-[12px] text-slate-500 mt-0.5">Hostnames are auto-resolved to IPv4 via DNS before connecting</p>
+            <p className="text-[12px] text-slate-500 mt-0.5">DNS resolves hostnames to IPv4 automatically before the connection starts</p>
           </div>
           <div>
             <label className="label">Port</label>
@@ -405,7 +405,7 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
           </div>
         </div>
         <div className="rounded-md border border-phantix-700/50 bg-phantix-950/50 p-3.5 text-xs leading-5 text-slate-500">
-          Least privilege: SecureGraph only needs access to its own dedicated schema --- never your application
+          Least privilege: SecureGraph only needs access to its own dedicated schema, never your application
           tables.
         </div>
         <button className="btn-primary w-full" disabled={busy}>{resolvingHost ? "Resolving DNS..." : busy ? "Saving..." : "Save connection"}</button>

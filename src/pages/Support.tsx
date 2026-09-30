@@ -32,7 +32,7 @@ export default function Support() {
           <EmptyState
             icon={<LifeBuoy size={22} />}
             title="No tickets yet"
-            body="We're here when you need us --- setup help, connection issues, or billing questions."
+            body="Contact us for help with setup, connection issues or billing."
             action={<button className="btn-primary" onClick={() => setOpen(true)}><Plus size={15} /> Open your first ticket</button>}
           />
         </Card>

@@ -29,7 +29,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
               </div>
               <div>
                 <h1 className="text-lg font-semibold text-white">Something went wrong</h1>
-                <p className="mt-1 text-xs text-slate-500">The UI crashed while rendering. Check the console for the component stack trace.</p>
+                <p className="mt-1 text-xs text-slate-500">The user interface crashed. Check the console for the component stack trace.</p>
               </div>
             </div>
             <pre className="my-3 max-h-40 overflow-auto rounded-md bg-phantix-950 p-3.5 text-[13px] text-severity-critical whitespace-pre-wrap">

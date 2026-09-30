@@ -33,7 +33,7 @@ const DOMAIN_LABEL: Record<string, string> = {
 };
 
 function domainLabel(domain?: string | null): string {
-  if (!domain) return "—";
+  if (!domain) return "Not set";
   return DOMAIN_LABEL[domain] ?? domain.replace(/_/g, " ");
 }
 
@@ -103,7 +103,7 @@ export default function AgentActivity() {
     <div>
       <PageHeader
         title="Agent activity"
-        description="What the agent did for this organization — run, domain, intent, authorization and outcome for every action."
+        description="What the agent did for this organization: run, domain, intent, authorization and outcome for every action."
         actions={
           <>
             <DocLink docId="howto-platform-index" label="Platform how-to index" />
@@ -119,7 +119,7 @@ export default function AgentActivity() {
         <p className="text-[13px] leading-5 text-gold-100/90">
           The agent acts as the signed-in user and can do only what that user's role allows. Every action that
           changes something needs a <span className="font-semibold">fresh, single-use authorization</span> bound
-          to one action on one run — an approval is spent by the call it authorizes. A denied row here means a
+          to one action on one run. An approval is spent by the call it authorizes. A denied row here means a
           control held, not that something broke.
         </p>
       </div>
@@ -132,7 +132,7 @@ export default function AgentActivity() {
         >
           <option value="all">All outcomes</option>
           <option value="completed">Completed</option>
-          <option value="failed">Denied / failed</option>
+          <option value="failed">Denied or failed</option>
         </select>
         <select
           value={domain}
@@ -201,11 +201,11 @@ export default function AgentActivity() {
                         <td className="td">
                           <p className="flex items-center gap-1.5 font-mono text-[13px] text-slate-200">
                             <Bot size={11} className="text-gold-400" />
-                            {row.tool ?? "—"}
+                            {row.tool ?? "Not set"}
                           </p>
                         </td>
                         <td className="td max-w-[320px] text-[13px] text-slate-400">
-                          <span className="block truncate" title={row.intent || undefined}>{row.intent || <span className="text-slate-600">—</span>}</span>
+                          <span className="block truncate" title={row.intent || undefined}>{row.intent || <span className="text-slate-600">Not set</span>}</span>
                         </td>
                         <td className="td">
                           {row.actor_name || row.actor_email || row.actor_user_id ? (
@@ -223,7 +223,7 @@ export default function AgentActivity() {
                           ) : row.authorized === false ? (
                             <span className="chip border-phantix-700 text-slate-500">not required / none</span>
                           ) : (
-                            <span className="text-[13px] text-slate-600">—</span>
+                            <span className="text-[13px] text-slate-600">Not set</span>
                           )}
                         </td>
                         <td className="td"><Outcome row={row} /></td>
@@ -249,7 +249,7 @@ export default function AgentActivity() {
                                 </p>
                               )}
                               <p className="font-mono text-[12px] text-slate-600">
-                                evidence {row.evidence_hash?.slice(0, 16) ?? "—"} · response {row.response_hash?.slice(0, 16) ?? "—"}
+                                evidence {row.evidence_hash?.slice(0, 16) ?? "Not set"} · response {row.response_hash?.slice(0, 16) ?? "Not set"}
                               </p>
                             </div>
                           </td>
@@ -263,7 +263,7 @@ export default function AgentActivity() {
             {!items.length && (
               <div className="flex flex-col items-center gap-2 py-14 text-center">
                 <Activity size={22} className="text-slate-600" />
-                <p className="text-sm text-slate-500">No agent actions yet. Ask the agent to do something — read or write — and it appears here.</p>
+                <p className="text-sm text-slate-500">No agent actions yet. Ask the agent to do a read or a write. It then appears here.</p>
               </div>
             )}
           </Card>
@@ -290,7 +290,7 @@ export default function AgentActivity() {
       )}
 
       <p className="mt-5 text-xs text-slate-500">
-        Rows live in the platform audit store (<span className="font-mono">ai_audit_logs</span>) — not in your
+        Rows live in the platform audit store (<span className="font-mono">ai_audit_logs</span>), not in your
         customer security database. Sensitive parameters are redacted before the row is written.
       </p>
     </div>

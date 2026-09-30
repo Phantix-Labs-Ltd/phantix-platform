@@ -33,7 +33,7 @@ export default function Tools() {
     <div>
       <PageHeader
         title="Tool catalog"
-        description="Scanner tooling subscriptions --- separate from platform membership. Staff curate the catalog; you subscribe per company."
+        description="Scanner tooling subscriptions, separate from platform membership. SecureGraph staff curate the catalog. You subscribe per company."
         actions={<DocLink docId="howto-platform-index" label="Platform how-to index" />}
       />
 
@@ -59,7 +59,7 @@ export default function Tools() {
                     <tr key={s.id} className="border-b border-phantix-700/20 hover:bg-phantix-800/40">
                       <td className="td text-sm text-slate-200">{s.tool_name || s.tool_key || `Tool #${s.tool_id}`}</td>
                       <td className="td"><span className="chip text-[12px] border-emerald-400/30 bg-emerald-400/10 text-emerald-300">{s.status || "active"}</span></td>
-                      <td className="td text-xs text-slate-500">{s.created_at ? timeAgo(s.created_at) : "—"}</td>
+                      <td className="td text-xs text-slate-500">{s.created_at ? timeAgo(s.created_at) : "Not set"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -96,7 +96,7 @@ export default function Tools() {
                     onClick={async () => {
                       try {
                         await toggleTool(t);
-                        toast("success", t.subscribed ? "Disabled locally" : `${t.name} activated`, t.subscribed ? "Cancelling isn't available yet — the change applies for this session only." : "Subscription request sent");
+                        toast("success", t.subscribed ? "Disabled locally" : `${t.name} activated`, t.subscribed ? "Cancelling is not available yet. This change applies to this session only." : "Subscription request sent");
                       } catch (err) {
                         toast("error", "Action failed", err instanceof Error ? err.message : "Could not update tool subscription");
                       }

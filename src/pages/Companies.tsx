@@ -182,7 +182,7 @@ export default function Companies() {
               setKeyModal(null);
             }}
           >
-            <Copy size={15} /> Copy & I stored it safely
+            <Copy size={15} /> Copy and I stored it safely
           </button>
         </div>
       </Modal>

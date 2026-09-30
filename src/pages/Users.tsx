@@ -68,7 +68,7 @@ export default function People() {
   const [approvingId, setApprovingId] = useState<number | null>(null);
 
   const approveOrReject = async (id: number, approve: boolean) => {
-    if (!(await requireDualControl("Deciding a pending action requires a dual-control operate session."))) return;
+    if (!(await requireDualControl("Use a dual-control operate session to decide a pending action."))) return;
     setApprovingId(id);
     try {
       await decidePending(id, approve);
@@ -91,7 +91,7 @@ export default function People() {
   return (
     <div>
       <PageHeader
-        title="People & audit control"
+        title="People and audit control"
         description="Named users with role-based privileges. Only the primary user signs in to the platform; actions here are recorded to the audit trail under the audit controller. The applications keep dual control."
         actions={
           <>
@@ -100,7 +100,7 @@ export default function People() {
               <button
                 className="btn-secondary"
                 onClick={async () => {
-                  if (dc.configured && !operate.unlocked && !(await requireDualControl("Creating users post-bootstrap needs an initiator/authorizer session."))) return;
+                  if (dc.configured && !operate.unlocked && !(await requireDualControl("After bootstrap, you need an initiator and authorizer session to create users."))) return;
                   try {
                     if (!DEMO_MODE) {
                       const ent = await api.get<any>("/billing/entitlements").catch(() => null);
@@ -133,7 +133,7 @@ export default function People() {
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-slate-100">Service key required for app access</p>
                   <p className="text-sm text-slate-400">
-                    Login links won't work until you create a service key. Go to Identity & Keys or click here to create one now.
+                    Login links will not work until you create a service key. Go to Identity and Keys, or click here to create one now.
                   </p>
                 </div>
                 <a href="/identity" className="btn-primary shrink-0">Create service key <ArrowRight size={15} /></a>
@@ -159,7 +159,7 @@ export default function People() {
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
               <CollapsibleCard
                 defaultOpen={false}
-                title="Roles & permissions"
+                title="Roles and permissions"
                 subtitle={canManageRoles
                     ? "Create and edit per-org roles and the privileges each one grants"
                     : "Assignable per-org roles, and what your session can do"}
@@ -168,7 +168,7 @@ export default function People() {
                       <button
                         className="btn-secondary !px-3 !py-1.5 !text-xs"
                         onClick={async () => {
-                          if (!operate.unlocked && !(await requireDualControl("Managing roles requires a dual-control operate session."))) return;
+                          if (!operate.unlocked && !(await requireDualControl("Use a dual-control operate session to manage roles."))) return;
                           setRoleEditor({ mode: "create", role: null });
                         }}
                       >
@@ -210,7 +210,7 @@ export default function People() {
                                 className="btn-ghost !px-2.5 !py-1.5 !text-xs"
                                 title="Edit privileges"
                                 onClick={async () => {
-                                  if (!operate.unlocked && !(await requireDualControl("Managing roles requires a dual-control operate session."))) return;
+                                  if (!operate.unlocked && !(await requireDualControl("Use a dual-control operate session to manage roles."))) return;
                                   setRoleEditor({ mode: "edit", role: r });
                                 }}
                               >
@@ -221,7 +221,7 @@ export default function People() {
                                 title={r.is_system ? "System roles cannot be deleted" : "Delete role"}
                                 disabled={r.is_system}
                                 onClick={async () => {
-                                  if (!operate.unlocked && !(await requireDualControl("Managing roles requires a dual-control operate session."))) return;
+                                  if (!operate.unlocked && !(await requireDualControl("Use a dual-control operate session to manage roles."))) return;
                                   setDeletingRole(r);
                                 }}
                               >
@@ -236,7 +236,7 @@ export default function People() {
                 )}
                 {myPerms && (
                   <p className="mt-3 border-t border-phantix-800/50 pt-3 text-[13px] text-slate-500">
-                    Your session role <strong className="text-slate-300">{myPerms.role || "—"}</strong> ·{" "}
+                    Your session role <strong className="text-slate-300">{myPerms.role || "Not set"}</strong> ·{" "}
                     {myPerms.permissions?.length ?? 0} permissions
                     {myPerms.is_initiator ? " · initiator" : ""}
                     {myPerms.is_authorizer ? " · authorizer" : ""}
@@ -265,7 +265,7 @@ export default function People() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-slate-100">{authorizer?.full_name ?? "—"}</p>
+                    <p className="font-semibold text-slate-100">{authorizer?.full_name ?? "Not set"}</p>
                     <span className="chip border-gold-400/30 bg-gold-400/10 text-gold-300">Authorizer · sole approver</span>
                   </div>
                   <p className="text-xs text-slate-500">{authorizer?.title} · {authorizer?.email}</p>
@@ -283,7 +283,7 @@ export default function People() {
                   <button
                     className="btn-secondary !px-3 !py-1.5 !text-xs"
                     onClick={async () => {
-                      if (!operate.unlocked && !(await requireDualControl("Adding an initiator needs an initiator/authorizer operate session."))) return;
+                      if (!operate.unlocked && !(await requireDualControl("Use an initiator and authorizer operate session to add an initiator."))) return;
                       try {
                         if (!DEMO_MODE) {
                           const ent = await api.get<any>("/billing/entitlements").catch(() => null);
@@ -487,7 +487,7 @@ function RoleEditorModal({
                   return { key: app.key, label: app.label, items };
                 });
                 const other = catalog.filter((c) => !used.has(c.permission));
-                if (other.length) sections.push({ key: "shared", label: "Shared / platform", items: other });
+                if (other.length) sections.push({ key: "shared", label: "Shared platform", items: other });
                 return sections
                   .filter((s) => s.items.length > 0)
                   .map((s) => (
@@ -598,7 +598,7 @@ function BootstrapWizard() {
 
         {/* Progress */}
         <div className="mb-6 flex items-center gap-2">
-          {["Welcome", "First initiator", "Authorizer", "Review & assign"].map((l, i) => (
+          {["Welcome", "First initiator", "Authorizer", "Review and assign"].map((l, i) => (
             <React.Fragment key={l}>
               <div className={cx("flex items-center gap-2", i <= wizardStep ? "text-gold-300" : "text-slate-600")}>
                 <span className={cx("flex h-6 w-6 items-center justify-center rounded-full text-[12px] font-bold", i < wizardStep ? "bg-emerald-400/20 text-emerald-400" : i === wizardStep ? "bg-gold-400/20 text-gold-300" : "bg-phantix-800/70 text-slate-600")}>
@@ -631,11 +631,11 @@ function BootstrapWizard() {
                   <div className="mt-4 grid max-w-xl grid-cols-2 gap-3">
                     <div className="rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3.5">
                       <p className="text-xs font-semibold text-gold-300">Initiators <span className="font-normal text-slate-500">· one or more</span></p>
-                      <p className="mt-1 text-[13px] leading-4 text-slate-500">Propose & execute (e.g. IT Admin). Add as many as you need.</p>
+                      <p className="mt-1 text-[13px] leading-4 text-slate-500">Propose and execute, for example IT Admin. Add as many as you need.</p>
                     </div>
                     <div className="rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3.5">
                       <p className="text-xs font-semibold text-gold-300">Authorizer <span className="font-normal text-slate-500">· exactly one</span></p>
-                      <p className="mt-1 text-[13px] leading-4 text-slate-500">Sole approver of pending actions (e.g. CISO).</p>
+                      <p className="mt-1 text-[13px] leading-4 text-slate-500">Sole approver of pending actions, for example the CISO.</p>
                     </div>
                   </div>
                   <button onClick={() => setPhase("initiator")} className="btn-primary mt-5">
@@ -679,10 +679,10 @@ function BootstrapWizard() {
                           setAuthorizer(existing);
                           setPhase("review");
                         }
-                        toast("info", `${existing.full_name} already exists`, "Reusing existing org user for dual control.");
+                        toast("info", `${existing.full_name} already exists`, "Reuse an existing organization user for dual control.");
                         return;
                       }
-                      setError("This email is already registered but not in the current user list. Try refreshing the page.");
+                      setError("This email is already registered, but it is not in the current user list. Refresh the page and try again.");
                     } else {
                       setError(err instanceof Error ? err.message : "Could not create user. Check the email address.");
                     }
@@ -938,7 +938,7 @@ function UsersTable({
                   <div className="flex justify-end gap-1.5">
                     <button
                       className="btn-ghost !px-2.5 !py-1.5 !text-xs"
-                      title="Application access — assign a role per application (Core / Attack / Defend / Code)"
+                      title="Application access. Assign a role per application: Core, Attack, Defend and Code"
                       onClick={async () => {
                         if (!operate.unlocked && !(await onUnlock())) return;
                         setAppUser(u);
@@ -948,7 +948,7 @@ function UsersTable({
                     </button>
                     <button
                       className="btn-ghost !px-2.5 !py-1.5 !text-xs"
-                      title={!state.serviceKey ? "App access requires an active service key --- create one on the Identity page" : "Generate a one-time app sign-in URL"}
+                      title={!state.serviceKey ? "App access needs an active service key. Create one on the Identity page." : "Generate a one-time app sign-in URL"}
                       disabled={!state.serviceKey || linkingId === u.id}
                       onClick={async () => {
                         if (!operate.unlocked && !(await onUnlock())) return;
@@ -968,7 +968,7 @@ function UsersTable({
                     </button>
                     <button
                       className="btn-ghost !px-2.5 !py-1.5 !text-xs"
-                      title="Set platform password (forced change at first sign-in)"
+                      title="Set a platform password. The user must change it at the first sign-in."
                       onClick={async () => {
                         if (!operate.unlocked && !(await onUnlock())) return;
                         setPwd("");
@@ -1038,7 +1038,7 @@ function UsersTable({
           <div className="rounded-md border border-gold-400/25 bg-gold-400/5 p-3.5 text-xs leading-5 text-slate-400">
             <strong className="text-gold-300">{pwdFor?.name}</strong> signs in to the platform with
             this password and must change it at first sign-in. Only roles with platform access
-            (<span className="font-mono">org_admin</span> / <span className="font-mono">org_owner</span>
+            (<span className="font-mono">org_admin</span> or <span className="font-mono">org_owner</span>
             ) can use it.
           </div>
           <div>
@@ -1085,7 +1085,7 @@ function LoginLinks() {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }} className="mt-5">
       <Card>
-        <CardHeader title="Issued login links" subtitle="No secrets stored here --- delivery status only" />
+        <CardHeader title="Issued login links" subtitle="No secrets are stored here. This shows delivery status only." />
         <div className="space-y-2">
           {state.loginLinks.map((l) => (
             <div key={l.id} className="flex items-center gap-3 rounded-md border border-phantix-700/40 bg-phantix-950/50 px-4 py-3">
@@ -1179,7 +1179,7 @@ function ReassignModal({
             // unlocked initiator/authorizer session for that, not just the
             // company JWT. Prompt for it first instead of letting the raw
             // 403 surface.
-            if (state.dualControl.configured && !operate.unlocked && !(await requireDualControl("Reassigning dual control requires an initiator/authorizer operate session."))) {
+            if (state.dualControl.configured && !operate.unlocked && !(await requireDualControl("Use an initiator and authorizer operate session to reassign dual control."))) {
               return;
             }
             setBusy(true);
@@ -1264,7 +1264,7 @@ function AddUserModal({
           <input className="input" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         <div>
-          <label className="label">Role (sets this user's privileges)</label>
+          <label className="label">Role: sets the privileges of this user</label>
           <select className="input" value={role} onChange={(e) => setRole(e.target.value)}>
             <option value="viewer">viewer</option>
             <option value="operator">operator</option>

@@ -32,19 +32,19 @@ export const docCategories = [
 ] as const;
 
 export const docs: DocEntry[] = [
-  { id: "howto-platform-index", title: "Platform how-tos", description: "The full task index for company / security admins.", category: "how-to-platform", content: howtoIndex, badge: "Start here" },
-  { id: "howto-platform-01", title: "Register & sign in", description: "Create your organization tenant and sign in.", category: "how-to-platform", content: howto01 },
+  { id: "howto-platform-index", title: "Platform how-tos", description: "The full task index for company and security admins.", category: "how-to-platform", content: howtoIndex, badge: "Start here" },
+  { id: "howto-platform-01", title: "Register and sign in", description: "Create your organization tenant and sign in.", category: "how-to-platform", content: howto01 },
   { id: "howto-platform-02", title: "Complete the setup wizard", description: "Privacy notice, company profile, and email verification.", category: "how-to-platform", content: howto02 },
   { id: "howto-platform-03", title: "Add a new user", description: "Invite people into the organization.", category: "how-to-platform", content: howto03 },
   { id: "howto-platform-04", title: "Assign audit control", description: "Set the initiator and authorizer who control the audit trail.", category: "how-to-platform", content: howto04 },
   { id: "howto-platform-05", title: "Issue a Command Centre login link", description: "Get operators into the product app.", category: "how-to-platform", content: howto05 },
   { id: "howto-platform-06", title: "Connect a security database", description: "Bootstrap the security_data_storage connection.", category: "how-to-platform", content: howto06 },
   { id: "howto-platform-07", title: "Connect a config database", description: "Optional config-inspection database connection.", category: "how-to-platform", content: howto07 },
-  { id: "howto-platform-08", title: "Identity, service keys & branding", description: "Tenant identity, keys, and branding assets.", category: "how-to-platform", content: howto08 },
+  { id: "howto-platform-08", title: "Identity, service keys and brand assets", description: "Tenant identity, keys and brand assets.", category: "how-to-platform", content: howto08 },
   { id: "howto-platform-09", title: "Audit control", description: "Who controls the audit trail on the platform.", category: "how-to-platform", content: howto09 },
   { id: "howto-platform-10", title: "Connect GitHub", description: "Install the GitHub App for repository analysis.", category: "how-to-platform", content: howto10 },
-  { id: "howto-platform-11", title: "Billing & subscribe", description: "Plans, payments, and subscription management.", category: "how-to-platform", content: howto11 },
-  { id: "howto-platform-12", title: "Configure alert channels", description: "Email, WhatsApp and Telegram alert delivery.", category: "how-to-platform", content: howto12 },
+  { id: "howto-platform-11", title: "Billing and subscribe", description: "Plans, payments, and subscription management.", category: "how-to-platform", content: howto11 },
+  { id: "howto-platform-12", title: "Set up alert channels", description: "Email, WhatsApp and Telegram alert delivery.", category: "how-to-platform", content: howto12 },
   { id: "howto-platform-13", title: "BETA sandbox feedback", description: "Report issues and feedback from the sandbox.", category: "how-to-platform", content: howto13 },
 ];
 

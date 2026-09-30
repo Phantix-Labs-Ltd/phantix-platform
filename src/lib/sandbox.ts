@@ -122,7 +122,7 @@ const demoMe: SandboxMe = {
   latestUpdate: {
     id: 9,
     title: "Platform + Command Centre BETA",
-    body_md: "Use **Platform** for org setup and **Command Centre** for SOC / scans / reports.",
+    body_md: "Use **Platform** for org setup and **Command Centre** for SOC, scans and reports.",
     severity: "fix",
     version_label: "2026-08-19",
     published_at: new Date().toISOString(),
@@ -179,7 +179,7 @@ export async function submitSandboxRating(body: {
 export async function loadMySandboxRatings(): Promise<SandboxRating[]> {
   if (DEMO_MODE) {
     await delay();
-    return [{ id: 1, score: 4, nps: 8, area: "platform", comment: "Identity & keys clear", created_at: new Date().toISOString() }];
+    return [{ id: 1, score: 4, nps: 8, area: "platform", comment: "Identity and keys clear", created_at: new Date().toISOString() }];
   }
   try {
     return asList<SandboxRating>(await api.get<unknown>("/sandbox/ratings/mine"));

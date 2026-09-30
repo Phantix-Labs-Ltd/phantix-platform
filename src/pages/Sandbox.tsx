@@ -97,7 +97,7 @@ export default function Sandbox() {
       });
       setRatings((prev) => [row, ...prev]);
       setRateOpen(false);
-      toast("success", "Thanks — rating recorded");
+      toast("success", "Rating recorded");
     } catch (e) {
       toast("error", "Rating failed", e instanceof Error ? e.message : "");
     } finally {
@@ -140,7 +140,7 @@ export default function Sandbox() {
     <div>
       <PageHeader
         title="BETA sandbox"
-        description={`${me.program?.name ?? "Launch cohort"} · rate Platform & Command Centre builds`}
+        description={`${me.program?.name ?? "Launch cohort"} · rate Platform and Command Centre builds`}
         actions={
           <div className="flex flex-wrap gap-2">
             <DocLink docId="howto-platform-13" label="Sandbox how-to" className="!text-xs px-3 py-1.5" />
@@ -180,7 +180,7 @@ export default function Sandbox() {
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-3">
           <Card>
-            <CardHeader title="Live updates" subtitle="Staff posts after deploys — ack when you've refreshed" action={<Megaphone size={15} className="text-gold-400" />} />
+            <CardHeader title="Live updates" subtitle="Staff post after each deploy. Acknowledge when you refresh" action={<Megaphone size={15} className="text-gold-400" />} />
             {updates.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-500">No updates yet.</p>
             ) : (
@@ -258,13 +258,13 @@ export default function Sandbox() {
               <li className="flex items-start gap-2">
                 <ExternalLink size={12} className="mt-0.5 shrink-0 text-gold-400" />
                 <span>
-                  <strong className="text-slate-200">Platform</strong> — identity, people, security DB, billing, tools
+                  <strong className="text-slate-200">Platform</strong>. Identity, people, security database, billing and tools.
                 </span>
               </li>
               <li className="flex items-start gap-2">
                 <Rocket size={12} className="mt-0.5 shrink-0 text-gold-400" />
                 <span>
-                  <strong className="text-slate-200">Command Centre</strong> — dashboard, assets, SOC, scans, reports, AGI
+                  <strong className="text-slate-200">Command Centre</strong>. Dashboard, assets, SOC, scans, reports and AGI.
                 </span>
               </li>
             </ul>

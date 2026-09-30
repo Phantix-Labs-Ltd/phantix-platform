@@ -57,12 +57,12 @@ const emptySetup = (): SetupState => ({
 /** Demo-only seed catalog --- never used in live mode. */
 const demoTools: ToolItem[] = [
   { id: 1, key: "dns_hygiene", name: "DNS Hygiene", category: "scanning", description: "Authoritative DNS checks, hygiene and exposure", subscribed: true, price_note: "Included", tier: "free", pricing_model: "free", eligible: true, monthly_price_ngn: 0 },
-  { id: 2, key: "network_surface_scan", name: "Network Surface Scan", category: "scanning", description: "Port & service discovery with admin-pinned flags", subscribed: true, price_note: "Included", tier: "free", pricing_model: "free", eligible: true, monthly_price_ngn: 0 },
+  { id: 2, key: "network_surface_scan", name: "Network Surface Scan", category: "scanning", description: "Port and service discovery with admin-pinned flags", subscribed: true, price_note: "Included", tier: "free", pricing_model: "free", eligible: true, monthly_price_ngn: 0 },
   { id: 3, key: "basic_asset_inventory", name: "Basic Asset Inventory", category: "scanning", description: "Asset CRUD + light discovery", subscribed: true, price_note: "Included", tier: "free", pricing_model: "free", eligible: true, monthly_price_ngn: 0 },
   { id: 4, key: "vulnerability_scanner", name: "Vulnerability Scanner", category: "scanning", description: "nmap + nuclei + vuln YAML pipeline", subscribed: false, price_note: "Included", tier: "free", pricing_model: "free", eligible: true, monthly_price_ngn: 0 },
-  { id: 5, key: "cloud_security_scan", name: "Cloud Security Scan", category: "scanning", description: "CSPM-style cloud posture checks", subscribed: false, price_note: "Add-on · ₦150,000/mo", tier: "addon_subscription", pricing_model: "paid", eligible: false, eligibility_reason: "Billable add-on — requires active Premium (or coupon) first.", monthly_price_ngn: 150000 },
-  { id: 6, key: "dynamic_mobile_testing", name: "Dynamic Mobile Testing", category: "scanning", description: "Mobile dynamic VAPT via AVD", subscribed: false, price_note: "Add-on · ₦250,000/mo", tier: "addon_subscription", pricing_model: "paid", eligible: false, eligibility_reason: "Billable add-on — requires active Premium (or coupon) first.", monthly_price_ngn: 250000 },
-  { id: 7, key: "ai_pentest_agent", name: "AI Pentest Agent", category: "other", description: "Autonomous, human-gated pentest agent (engagement)", subscribed: false, price_note: "Add-on · quote", tier: "addon_engagement", pricing_model: "paid", eligible: false, eligibility_reason: "Engagement tool — staff quote and provision after sales acceptance.", monthly_price_ngn: 0 },
+  { id: 5, key: "cloud_security_scan", name: "Cloud Security Scan", category: "scanning", description: "CSPM-style cloud posture checks", subscribed: false, price_note: "Add-on · ₦150,000 per month", tier: "addon_subscription", pricing_model: "paid", eligible: false, eligibility_reason: "Billable add-on. You need an active Premium subscription or a coupon first.", monthly_price_ngn: 150000 },
+  { id: 6, key: "dynamic_mobile_testing", name: "Dynamic Mobile Testing", category: "scanning", description: "Mobile dynamic VAPT via AVD", subscribed: false, price_note: "Add-on · ₦250,000 per month", tier: "addon_subscription", pricing_model: "paid", eligible: false, eligibility_reason: "Billable add-on. You need an active Premium subscription or a coupon first.", monthly_price_ngn: 250000 },
+  { id: 7, key: "ai_pentest_agent", name: "AI Pentest Agent", category: "other", description: "Autonomous, human-gated pentest agent (engagement)", subscribed: false, price_note: "Add-on · quote", tier: "addon_engagement", pricing_model: "paid", eligible: false, eligibility_reason: "Engagement tool. SecureGraph staff quote and provision it after sales acceptance.", monthly_price_ngn: 0 },
 ];
 
 const demoPayments: Payment[] = [
@@ -1455,7 +1455,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (DEMO_MODE) {
         await delay(500);
         persist((s) => ({ ...s, setup: { ...s.setup, cac_submitted: true, company_verified: true } }));
-        logAudit("setup.cac", "setup", "Submitted CAC / RC details");
+        logAudit("setup.cac", "setup", "Submitted CAC and RC details");
         return;
       }
       // API accepts rc_number (and related CAC fields) or skip
@@ -1783,7 +1783,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       tokens.dualControl = null;
       clearOperateMeta();
       setOperate({ unlocked: false, actingUser: null, actingRole: null, expiresAt: null });
-      void requireDualControl(msg || "Operate session ended. Unlock to continue — you stay signed in.");
+      void requireDualControl(msg || "Operate session ended. Unlock to continue. You stay signed in.");
     };
     window.addEventListener("phantix:dual-control-session-expired", onExpired);
     return () => window.removeEventListener("phantix:dual-control-session-expired", onExpired);
@@ -1958,7 +1958,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (!state.serviceKey) {
         throw new Error(
           "App access requires an active service key. " +
-          "Go to Identity & Keys → create a service key before issuing login links.",
+          "Go to Identity and Keys and create a service key before you issue login links.",
         );
       }
       // Requires org Bearer; dual-control session when configured

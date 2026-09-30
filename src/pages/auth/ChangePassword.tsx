@@ -36,7 +36,7 @@ export default function ChangePassword() {
     setBusy(true);
     try {
       await changePassword(current, next);
-      toast("success", "Password updated", "Your platform password has been changed.");
+      toast("success", "Password updated", "You changed your platform password.");
       navigate(state.setup.setup_complete ? "/dashboard" : "/setup", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not change password");

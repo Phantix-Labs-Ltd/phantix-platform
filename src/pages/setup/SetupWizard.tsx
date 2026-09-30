@@ -60,8 +60,8 @@ export default function SetupWizard() {
     if (DEMO_MODE) {
       setPrivacyNotice({
         version: s.privacy_notice_version || "2026-07-10",
-        title: "How SecureGraph handles your organization's data",
-        summary: "Demo privacy notice --- connect the live API for the official copy.",
+        title: "How SecureGraph handles the data of your organization",
+        summary: "Demo privacy notice. Connect the live API for the official copy.",
         highlights: [
           { id: "1", label: "Security data", text: "Findings and assets live only in your dedicated security database." },
           { id: "2", label: "Platform data", text: "We store account, billing, and setup state only." },
@@ -194,7 +194,7 @@ export default function SetupWizard() {
 
         <div className="rounded-md border border-phantix-700/40 bg-phantix-900/60 p-4 text-[13px] leading-5 text-slate-500">
           <Info size={13} className="mb-1.5 text-gold-400" />
-          Your progress is saved as you go — leave and return at any time.
+          Your progress is saved as you go. Leave and return at any time.
           Required: privacy acceptance, email verification and company verification (domain, registry
           details, or a manual review).
           {s.next_step && (
@@ -374,7 +374,7 @@ function PrivacyStep({ privacyNotice }: { privacyNotice: Record<string, unknown>
           }
         }}
       >
-        {busy ? "Recording..." : "Accept & continue"} <ArrowRight size={15} />
+        {busy ? "Recording..." : "Accept and continue"} <ArrowRight size={15} />
       </button>
     </div>
   );
@@ -443,7 +443,7 @@ function IdentityStep({ onSkip, onDone, privacyNotice }: { onSkip: () => void; o
         {error && <p className="text-sm text-severity-critical">{error}</p>}
         <div className="flex gap-3">
           <button type="submit" className="btn-primary flex-1 !py-3" disabled={busy}>
-            {busy ? "Saving..." : "Save & continue"}
+            {busy ? "Saving..." : "Save and continue"}
           </button>
           <button type="button" onClick={onSkip} className="btn-ghost">
             Skip for now
@@ -618,7 +618,7 @@ function VerifyStep({ onContinue, privacyNotice }: { onContinue: () => void; pri
       <div className="card p-7">
         <StepTitle icon={<Globe size={18} />} kicker="Step 4 of 6 · required" title="Prove company control" />
         <p className="mt-2 text-sm text-slate-400">
-          Choose any <strong>one</strong> mode to verify your company — usually the domain. Verification is required
+          Choose any <strong>one</strong> mode to verify your company, usually the domain. Verification is required
           before setup can be completed, and you can switch modes at any time.
         </p>
 
@@ -920,7 +920,7 @@ function VerifyStep({ onContinue, privacyNotice }: { onContinue: () => void; pri
         title={
           verified || s.manual_review === "pending"
             ? undefined
-            : "Verify your company to continue — domain, registry details or a staff review"
+            : "Verify your company to continue: domain, registry details or a staff review"
         }
         className="btn-primary w-full !py-3.5 disabled:cursor-not-allowed disabled:opacity-50"
       >
@@ -1109,12 +1109,12 @@ function CompleteStep({ privacyNotice, planChoice }: { privacyNotice: Record<str
       ok: s.company_verified || s.domain_dns_ok || s.domain_http_ok || s.cac_submitted || s.manual_review === "approved",
       required: false,
     },
-    { label: `Plan — ${planLabel(planChoice)}`, ok: true, required: false },
+    { label: `Plan: ${planLabel(planChoice)}`, ok: true, required: false },
   ];
 
   return (
     <div className="card p-7">
-      <StepTitle icon={<FileText size={18} />} kicker="Step 6 of 6" title="Review & complete" />
+      <StepTitle icon={<FileText size={18} />} kicker="Step 6 of 6" title="Review and complete" />
       <div className="mt-5 space-y-2.5">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center justify-between rounded-md border border-phantix-700/40 bg-phantix-950/50 px-4 py-3">

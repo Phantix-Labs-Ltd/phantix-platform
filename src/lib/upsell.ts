@@ -12,13 +12,13 @@ export interface UpsellFeature {
 export const UPSELL_FEATURES: Record<string, UpsellFeature> = {
   continuous_pr: {
     key: "continuous_pr",
-    label: "Continuous PR / MR review",
+    label: "Continuous pull request review",
     plan: "growth",
-    blurb: "Every push reviewed, not just an on-demand check. Continuous PR is a Growth capability.",
+    blurb: "SecureGraph reviews every push, not only an on-demand check. Continuous pull request review is a Growth capability.",
   },
   continuous_pentest: {
     key: "continuous_pentest",
-    label: "Continuous / recurring pentest",
+    label: "Continuous and recurring pentest",
     plan: "growth",
     blurb: "Re-tested on a schedule so a fix is confirmed, not assumed. Recurring pentest is Growth.",
   },
@@ -30,15 +30,15 @@ export const UPSELL_FEATURES: Record<string, UpsellFeature> = {
   },
   container_security_scan: {
     key: "container_security_scan",
-    label: "Container & Kubernetes posture",
+    label: "Container and Kubernetes posture",
     plan: "growth",
     blurb: "Image and cluster posture with a container runtime. Container packs are Growth.",
   },
   secrets_and_sca: {
     key: "secrets_and_sca",
-    label: "Secrets, SCA & SAST",
+    label: "Secrets, SCA and SAST",
     plan: "growth",
-    blurb: "Six-layer code security — secrets, dependencies, IaC and SAST. Part of Growth.",
+    blurb: "Six-layer code security: secrets, dependencies, IaC and SAST. Part of Growth.",
   },
   compliance_workbench: {
     key: "compliance_workbench",
@@ -60,9 +60,9 @@ export const UPSELL_FEATURES: Record<string, UpsellFeature> = {
   },
   dynamic_mobile: {
     key: "dynamic_mobile",
-    label: "Dynamic mobile / AVD testing",
+    label: "Dynamic mobile and AVD testing",
     plan: "engagement",
-    blurb: "Runtime mobile analysis is a project engagement — request a quote.",
+    blurb: "Runtime mobile analysis is a project engagement. Request a quote.",
   },
 };
 

@@ -284,7 +284,7 @@ export default function DualControlOverlay() {
                     <p className="mt-2 text-sm font-medium text-slate-200">Confirm this new device</p>
                     <p className="mt-1 text-xs leading-5 text-slate-500">
                       A confirmation link was sent to {masked || maskEmail(email)}. Open it to start the operate
-                      session — no additional code needed.
+                      session. No additional code is necessary.
                     </p>
                   </div>
                   <div className="flex items-center justify-center gap-2 text-xs text-slate-400">

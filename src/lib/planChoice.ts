@@ -29,7 +29,7 @@ export const PLAN_CHOICES: Array<{
     tagline: "Know your attack surface, at no cost.",
     features: [
       "Asset inventory with fair-use caps",
-      "Light DNS / network hygiene scans",
+      "Light DNS and network hygiene scans",
       "Dual control, MFA and immutable audit",
       "500 one-time AI credits",
     ],
@@ -39,12 +39,12 @@ export const PLAN_CHOICES: Array<{
     name: "Starter",
     priceNgn: 9_900,
     priceNote: "per month",
-    tagline: "Assess like an attacker — VAPT with verified findings.",
+    tagline: "Assess like an attacker. VAPT with verified findings.",
     features: [
       "Everything in Free",
       "Scoped, approval-gated VAPT campaigns",
       "Verified findings with remediation guidance",
-      "5,000 AI credits / month",
+      "5,000 AI credits per month",
     ],
   },
   {
@@ -52,13 +52,13 @@ export const PLAN_CHOICES: Array<{
     name: "Growth",
     priceNgn: 19_900,
     priceNote: "per month",
-    tagline: "Keep testing — continuous security every week.",
+    tagline: "Keep testing. Continuous security every week.",
     highlight: true,
     features: [
       "Everything in Starter",
-      "Continuous pentest + PR / MR review",
-      "Multi-cloud & Kubernetes posture",
-      "20,000 AI credits / month",
+      "Continuous pentest and pull request review",
+      "Multi-cloud and Kubernetes posture",
+      "20,000 AI credits per month",
     ],
   },
 ];

@@ -117,7 +117,7 @@ export default function Integrations() {
         tabs={[
           { id: "catalog", label: "Connectors", count: catalog.data.length },
           { id: "installed", label: "Installed", count: active.length },
-          { id: "sso", label: "SSO & SCIM", count: ssoInstallations.filter((i) => i.status === "active").length },
+          { id: "sso", label: "SSO and SCIM", count: ssoInstallations.filter((i) => i.status === "active").length },
         ]}
         active={tab}
         onChange={setTab}
@@ -216,8 +216,8 @@ export default function Integrations() {
                         </td>
                         <td className="td text-xs text-slate-400">{humanize(inst.connector_id)}</td>
                         <td className="td text-xs text-slate-400">{humanize(inst.auth_mode)}</td>
-                        <td className="td whitespace-nowrap text-xs text-slate-500">{inst.created_at ? timeAgo(inst.created_at) : "—"}</td>
-                        <td className="td whitespace-nowrap text-xs text-slate-500">{inst.health?.last_test_at ? timeAgo(String(inst.health.last_test_at)) : "—"}</td>
+                        <td className="td whitespace-nowrap text-xs text-slate-500">{inst.created_at ? timeAgo(inst.created_at) : "Not set"}</td>
+                        <td className="td whitespace-nowrap text-xs text-slate-500">{inst.health?.last_test_at ? timeAgo(String(inst.health.last_test_at)) : "Not set"}</td>
                         <td className="td"><StatusBadge status={inst.status} /></td>
                         <td className="td text-right">
                           <div className="flex flex-wrap justify-end items-center gap-1.5">
@@ -302,7 +302,7 @@ export default function Integrations() {
             <div className="flex items-start gap-2 rounded-md border border-gold-400/30 bg-gold-400/10 p-3">
               <Info size={16} className="mt-0.5 shrink-0 text-gold-300" />
               <p className="text-xs leading-5 text-slate-300">
-                This value is shown <strong className="text-gold-300">once</strong>. Copy it now — we will not show it again.
+                This value is shown <strong className="text-gold-300">once</strong>. Copy it now. We will not show it again.
               </p>
             </div>
             <CopyChip value={showSecret.value} label="Secret" />
@@ -351,7 +351,7 @@ function SsoScimTab({
                   </span>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-slate-100">{inst.label || hubConnectorMeta[inst.connector_id]?.short || inst.connector_id}</p>
-                    <p className="text-[13px] text-slate-500">issuer: {String(inst.config?.issuer ?? "—")}</p>
+                    <p className="text-[13px] text-slate-500">issuer: {String(inst.config?.issuer ?? "Not set")}</p>
                   </div>
                   <div className="flex gap-1.5">
                     <button className="btn-ghost !px-2.5 !py-1 !text-[13px]" onClick={async () => {
@@ -479,7 +479,7 @@ function InstallModal({ connectorId, connector, onClose, onDone }: {
       }
       const res = await installHubIntegration(body, true);
       if (isPendingApproval(res)) {
-        toast("info", "Sent for approval", `${connector.display_name} install is parked for an authorizer — approve it from Authorizations to finish.`);
+        toast("info", "Sent for approval", `${connector.display_name} install is parked for an authorizer. Approve it from Authorizations to finish.`);
         onClose();
         return;
       }

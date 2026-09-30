@@ -239,7 +239,7 @@ export default function GithubIntegration() {
     <div>
       <PageHeader
         title="GitHub"
-        description="Connect the SecureGraph GitHub App to inventory and analyze your repositories. Primary integration — PAT is legacy."
+        description="Connect the SecureGraph GitHub App to inventory and analyze your repositories. This is the primary integration. A personal access token is the legacy method."
         actions={
           <>
             <DocLink docId="howto-platform-10" label="GitHub how-to" />
@@ -272,7 +272,7 @@ export default function GithubIntegration() {
                   {install!.discoverable_installations.length} unlinked GitHub installation{install!.discoverable_installations.length === 1 ? "" : "s"} found
                 </p>
                 <p className="mt-1 text-xs leading-5 text-slate-400">
-                  The App is already installed on one of your GitHub accounts — link it instead of reinstalling.
+                  The App is already installed on one of your GitHub accounts. Link it instead of reinstalling it.
                 </p>
                 <div className="mt-3 space-y-2">
                   {install!.discoverable_installations.map((d) => (
@@ -302,7 +302,7 @@ export default function GithubIntegration() {
                   <div>
                     <p className="text-sm font-medium text-slate-200">GitHub opened in a new tab</p>
                     <p className="mt-1 text-xs leading-5 text-slate-400">
-                      Complete the install there, then come back — we refresh automatically. Installed already?
+                      Complete the install there, then come back. SecureGraph refreshes automatically. Installed already?
                     </p>
                     <div className="mt-3 flex items-center gap-2">
                       <button onClick={() => void load()} disabled={loading} className="btn-secondary !py-1.5 !text-xs">
@@ -384,7 +384,7 @@ export default function GithubIntegration() {
               </div>
               <button onClick={disconnect} className="btn-ghost text-xs text-severity-critical">Disconnect</button>
             </div>
-            {install.pat_fallback && <p className="mt-3 text-xs text-amber-400">Using legacy PAT fallback — connect the App to enable private-repo analysis.</p>}
+            {install.pat_fallback && <p className="mt-3 text-xs text-amber-400">Using the legacy personal access token fallback. Connect the App to enable private repository analysis.</p>}
           </Card>
 
           <Tabs
@@ -685,7 +685,7 @@ function BranchReviewer({ repos }: { repos: Repo[] }) {
 
       <Modal open={topUpOpen} onClose={() => setTopUpOpen(false)} title="Top up branch review wallet">
         <div className="space-y-4">
-          <p className="text-xs leading-5 text-slate-400">Adding to your prepaid wallet. Reviewed pushes deduct per the repo's size tier.</p>
+          <p className="text-xs leading-5 text-slate-400">Adds to your prepaid wallet. Each reviewed push deducts credits for the size tier of the repository.</p>
           <div>
             <label className="label">Amount (NGN)</label>
             <input className="input" type="number" min={1000} value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -712,7 +712,7 @@ function BranchReviewer({ repos }: { repos: Repo[] }) {
 function EmptyRepoNote() {
   return (
     <p className="py-8 text-center text-sm text-slate-500">
-      Sync repositories first — branch review runs on repos connected through the GitHub App.
+      Sync repositories first. Branch review runs on repositories connected through the GitHub App.
     </p>
   );
 }

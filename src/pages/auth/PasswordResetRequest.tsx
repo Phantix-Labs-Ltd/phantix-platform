@@ -41,7 +41,7 @@ export default function PasswordResetRequest() {
             <div className="text-center">
               <ShieldCheck size={28} className="mx-auto text-emerald-400" />
               <h2 className="mt-3 font-display text-lg font-semibold text-white">Check your email</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">If an account matches that identifier, a reset link has been sent. The link expires in 30 minutes.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">If an account matches that identifier, the system sends a reset link. The link expires in 30 minutes.</p>
               <Link to="/login" className="btn-primary mt-6 w-full"><ArrowRight size={15} /> Return to sign in</Link>
             </div>
           ) : (

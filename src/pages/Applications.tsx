@@ -101,7 +101,7 @@ export default function Applications() {
     <div>
       <PageHeader
         title="Applications"
-        description="Choose which applications this company uses — Core is always on, and each operator still only sees the applications their role allows."
+        description="Choose which applications this company uses. Core is always on, and each operator still only sees the applications their role allows."
         actions={<DocLink docId="howto-platform-index" label="Platform how-to index" />}
       />
 
@@ -111,7 +111,7 @@ export default function Applications() {
         <EmptyState
           icon={<LayoutGrid size={20} />}
           title="Applications unavailable"
-          body="The application list could not be loaded. Refresh, or check that this company's subscription is active."
+          body="The application list could not be loaded. Refresh the page, or make sure that the subscription of this company is active."
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
@@ -188,7 +188,7 @@ export default function Applications() {
 
                   {card.surfaces && card.surfaces.length > 0 && (
                     <p className="mt-3 text-xs text-slate-500">
-                      {card.surfaces.length} pages —{" "}
+                      {card.surfaces.length} pages.{" "}
                       {card.surfaces.map((s) => s.label).slice(0, 6).join(", ")}
                       {card.surfaces.length > 6 ? "…" : ""}
                     </p>
@@ -230,7 +230,7 @@ export default function Applications() {
       )}
 
       <p className="mt-5 text-xs text-slate-500">
-        Disabling an application hides it for everyone in this company and blocks access to it —
+        Disabling an application hides it for everyone in this company and blocks access to it.
         work already done there is kept and reappears if you switch it back on. Who may enter an
         enabled application is decided by each person's role on People &amp; Control.
       </p>
