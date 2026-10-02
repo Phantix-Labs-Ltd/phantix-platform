@@ -38,9 +38,14 @@ export function PasswordInput({
   );
 }
 
-export function Card({ children, className, hover }: { children: React.ReactNode; className?: string; hover?: boolean }) {
+// Card padding steps. "md" is the default; "sm" is for one-line strips and
+// callouts; "none" is for cards whose children pad themselves (tables, divided
+// lists), so the padding is never applied twice.
+const CARD_PAD = { none: "", sm: "px-4 py-3", md: "p-4" } as const;
+
+export function Card({ children, className, hover, pad = "md" }: { children: React.ReactNode; className?: string; hover?: boolean; pad?: keyof typeof CARD_PAD }) {
   return (
-    <div className={cx("card p-5", hover && "transition-all duration-300 hover:border-phantix-500/60 hover:border-gold-400/60-blue hover:-translate-y-0.5", className)}>
+    <div className={cx("card", CARD_PAD[pad], hover && "transition-all duration-300 hover:border-phantix-500/60 hover:border-gold-400/60-blue hover:-translate-y-0.5", className)}>
       {children}
     </div>
   );
@@ -66,7 +71,7 @@ export function CollapsibleCard({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={cx("card p-5", className)}>
+    <div className={cx("card p-4", className)}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -99,9 +104,24 @@ export function CollapsibleCard({
   );
 }
 
+/** Label/value pairs as one divided list: a hairline between rows instead of
+ *  a bordered box per row, so nine fields take ~330px, not ~520px. */
+export function KeyValueList({ rows, className }: { rows: ReadonlyArray<readonly [React.ReactNode, React.ReactNode]>; className?: string }) {
+  return (
+    <dl className={cx("divide-y divide-phantix-700/40 rounded-md border border-phantix-700/40 bg-phantix-950/50", className)}>
+      {rows.map(([k, v], i) => (
+        <div key={i} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3.5 py-2">
+          <dt className="shrink-0 text-xs font-medium uppercase tracking-wider text-slate-500">{k}</dt>
+          <dd className="min-w-0 max-w-full">{v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export function CardHeader({ title, subtitle, action }: { title: React.ReactNode; subtitle?: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="mb-4 flex items-start justify-between gap-4">
+    <div className="mb-3 flex items-start justify-between gap-4">
       <div>
         <h3 className="font-display text-[15px] font-semibold text-slate-100">{title}</h3>
         {subtitle && <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p>}
@@ -113,12 +133,13 @@ export function CardHeader({ title, subtitle, action }: { title: React.ReactNode
 
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: React.ReactNode }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }} className="mb-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
       <div>
-        <h1 className="font-display text-[26px] font-bold tracking-tight text-white">{title}</h1>
-        {description && <p className="mt-1 max-w-2xl text-sm text-slate-400">{description}</p>}
+        <h1 className="font-display text-[24px] font-bold leading-tight tracking-tight text-white">{title}</h1>
+        {description && <p className="mt-1 max-w-3xl text-sm text-slate-400">{description}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2.5">{actions}</div>}
+      {/* Header buttons run compact (~34px): they sit beside a title, not a form. */}
+      {actions && <div className="flex flex-wrap items-center gap-2 [&_.btn-primary]:py-1.5 [&_.btn-secondary]:py-1.5 [&_.btn-ghost]:py-1.5 [&_.btn-danger]:py-1.5">{actions}</div>}
     </motion.div>
   );
 }
@@ -223,20 +244,20 @@ export function Spinner({ className }: { className?: string }) {
 
 export function EmptyState({ icon, title, body, action }: { icon: React.ReactNode; title: string; body?: string; action?: React.ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-phantix-800/70 text-phantix-300">{icon}</div>
+    <div className="flex flex-col items-center justify-center px-6 py-8 text-center">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-phantix-800/70 text-phantix-300 [&_svg]:h-[18px] [&_svg]:w-[18px]">{icon}</div>
       <h3 className="font-display text-base font-semibold text-slate-200">{title}</h3>
-      {body && <p className="mt-1.5 max-w-sm text-sm text-slate-400">{body}</p>}
-      {action && <div className="mt-5">{action}</div>}
+      {body && <p className="mt-1 max-w-sm text-sm text-slate-400">{body}</p>}
+      {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
 
 export function Tabs({ tabs, active, onChange }: { tabs: { id: string; label: React.ReactNode; count?: number }[]; active: string; onChange: (id: string) => void }) {
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-1 rounded-md bg-phantix-900/60 border border-phantix-700/40 p-1 w-fit">
+    <div className="mb-4 flex flex-wrap items-center gap-1 rounded-md bg-phantix-900/60 border border-phantix-700/40 p-1 w-fit">
       {tabs.map((t) => (
-        <button key={t.id} onClick={() => onChange(t.id)} className={cx("relative rounded-lg px-3.5 py-2 text-sm font-medium transition-colors", active === t.id ? "text-slate-100" : "text-slate-400 hover:text-slate-100")}>
+        <button key={t.id} onClick={() => onChange(t.id)} className={cx("relative rounded-lg px-3 py-1.5 text-sm font-medium transition-colors", active === t.id ? "text-slate-100" : "text-slate-400 hover:text-slate-100")}>
           {active === t.id && <motion.span layoutId="tab-pill" className="absolute inset-0 rounded-md border border-gold-400/40 bg-phantix-800" transition={{ type: "spring", stiffness: 400, damping: 32 }} />}
           <span className="relative flex items-center gap-1.5">
             {t.label}
@@ -546,7 +567,7 @@ export function CopyChip({ value, label }: { value: string; label?: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1600);
       }}
-      className="group inline-flex items-center gap-2 rounded-lg border border-phantix-700/50 bg-phantix-950/60 px-3 py-1.5 font-mono text-xs text-slate-300 transition-colors hover:border-gold-400/40 hover:text-gold-300"
+      className="group inline-flex items-center gap-2 rounded-lg border border-phantix-700/50 bg-phantix-950/60 px-2.5 py-1 font-mono text-xs text-slate-300 transition-colors hover:border-gold-400/40 hover:text-gold-300"
       title="Copy"
     >
       {label && <span className="font-sans text-[12px] uppercase tracking-wider text-slate-500">{label}</span>}

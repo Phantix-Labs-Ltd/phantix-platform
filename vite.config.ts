@@ -22,10 +22,42 @@ export default defineConfig(({ mode }) => {
       react(),
       siteFiles({
         siteUrl: "https://platform.phantixlabs.com",
-        // Sign-in, registration and the legal pages are public; the rest of
-        // the platform (docs included) is behind sign-in.
+        // Sign-in, registration and the legal pages are the platform's only
+        // public content; the rest of the platform (docs included) is behind
+        // sign-in.
         allow: ["/$", "/login", "/register", "/privacy", "/terms", "/aup", "/cookies"],
         sitemap: () => ["/login", "/register", "/privacy", "/terms", "/aup", "/cookies"],
+        // Every authenticated surface (see src/App.tsx), plus the reset, device
+        // and setup flows, which are reachable but must never be indexed.
+        disallow: [
+          "/api/",
+          "/setup",
+          "/dashboard",
+          "/sandbox",
+          "/identity",
+          "/companies",
+          "/users",
+          "/connections",
+          "/github",
+          "/applications",
+          "/tools",
+          "/billing",
+          "/ai",
+          "/agi",
+          "/support",
+          "/audit",
+          "/agent-activity",
+          "/alerts",
+          "/integrations",
+          "/danger-zone",
+          "/docs",
+          "/settings",
+          "/change-password",
+          "/device-confirm",
+          "/password-reset",
+          "/reset-password",
+        ],
+        aiCrawlers: true,
         entryBudgetKB: 600,
       }),
     ],

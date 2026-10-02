@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useCanonicalUrl } from "@/lib/useCanonicalUrl";
+import { Seo } from "@/lib/useSeo";
 import { StoreProvider, ToastViewport, useStore } from "@/lib/store";
 import Layout from "@/components/Layout";
 import CookieConsent from "@/components/CookieConsent";
@@ -78,17 +78,15 @@ function SetupRoute() {
   return <SetupWizard />;
 }
 
-/** Must render inside the router: it reads the current path. */
-function CanonicalUrl() {
-  useCanonicalUrl("https://platform.phantixlabs.com");
-  return null;
-}
-
+/**
+ * App roots. `<Seo />` must render inside the router because it reads the
+ * current path; `<BrowserRouter>` is mounted here rather than in main.tsx.
+ */
 export default function App() {
   return (
     <StoreProvider>
       <BrowserRouter>
-        <CanonicalUrl />
+        <Seo />
         <React.Suspense fallback={<ShellSkeleton />}>
           <Routes>
             <Route path="/login" element={<Login />} />

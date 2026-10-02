@@ -77,7 +77,26 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+      {/* Counts: one compact row, icon beside the number, so the cards below
+          start near the top of the page. */}
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }} className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { icon: <Users size={16} />, label: "Org users", value: state.users.length, to: "/users", accent: "text-phantix-300 bg-phantix-700/40" },
+          { icon: <Database size={16} />, label: "Connections", value: state.connections.length, to: "/connections", accent: "text-emerald-400 bg-emerald-400/12" },
+          { icon: <Building2 size={16} />, label: "Companies", value: 1 + state.companies.length, to: "/companies", accent: "text-gold-400 bg-gold-400/12" },
+          { icon: <KeyRound size={16} />, label: "Service keys", value: (state.serviceKey ? 1 : 0) + state.companies.filter((c) => c.key_prefix).length, to: "/identity", accent: "text-severity-low bg-severity-low/12" },
+        ].map((s) => (
+          <Link key={s.label} to={s.to} className="card group flex items-center gap-3 px-4 py-3 transition-colors hover:border-phantix-500/60">
+            <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-md", s.accent)}>{s.icon}</span>
+            <span className="min-w-0">
+              <span className="block font-display text-[22px] font-bold leading-tight text-white"><AnimatedNumber value={s.value} /></span>
+              <span className="block truncate text-xs text-slate-500 group-hover:text-slate-400">{s.label}</span>
+            </span>
+          </Link>
+        ))}
+      </motion.div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Getting started → profile completion status once every step is done. */}
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
           {gettingStartedDone ? (
@@ -101,7 +120,7 @@ export default function Dashboard() {
                 subtitle={`${doneCount} of ${checklist.length} complete`}
                 action={<ShieldCheck size={16} className="text-gold-400" />}
               />
-              <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-phantix-700/50">
+              <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-phantix-700/50">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${(doneCount / checklist.length) * 100}%` }}
@@ -109,13 +128,13 @@ export default function Dashboard() {
                   className="h-full rounded-full bg-gold-400"
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {checklist.map((c) => (
                   <button
                     key={c.label}
                     onClick={() => !c.done && navigate(c.to)}
                     className={cx(
-                      "flex w-full items-center gap-3 rounded-md border px-4 py-3 text-left text-sm transition-colors",
+                      "flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors",
                       c.done ? "border-emerald-400/20 bg-emerald-400/5 text-slate-400" : "border-phantix-700/50 bg-phantix-950/40 text-slate-200 hover:border-gold-400/40",
                     )}
                   >
@@ -129,33 +148,18 @@ export default function Dashboard() {
           )}
         </motion.div>
 
-        {/* Stats */}
-        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.14 }} className="grid grid-cols-2 gap-4">
-          {[
-            { icon: <Users size={17} />, label: "Org users", value: state.users.length, to: "/users", accent: "text-phantix-300 bg-phantix-700/40" },
-            { icon: <Database size={17} />, label: "Connections", value: state.connections.length, to: "/connections", accent: "text-emerald-400 bg-emerald-400/12" },
-            { icon: <Building2 size={17} />, label: "Companies", value: 1 + state.companies.length, to: "/companies", accent: "text-gold-400 bg-gold-400/12" },
-            { icon: <KeyRound size={17} />, label: "Service keys", value: (state.serviceKey ? 1 : 0) + state.companies.filter((c) => c.key_prefix).length, to: "/identity", accent: "text-severity-low bg-severity-low/12" },
-          ].map((s) => (
-            <Link key={s.label} to={s.to} className="card group p-5 transition-all hover:-translate-y-0.5 hover:border-phantix-500/60">
-              <span className={cx("flex h-10 w-10 items-center justify-center rounded-md", s.accent)}>{s.icon}</span>
-              <p className="mt-3 font-display text-3xl font-bold text-white"><AnimatedNumber value={s.value} /></p>
-              <p className="mt-0.5 text-xs text-slate-500 group-hover:text-slate-400">{s.label}</p>
-            </Link>
-          ))}
-        </motion.div>
-
         {/* Identity quick card */}
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           <Card className="h-full">
             <CardHeader title="Tenant identity" subtitle="Quote these on support tickets" />
-            <div className="space-y-2.5">
+            {/* One divided list, not a bordered box per field. */}
+            <div className="divide-y divide-phantix-700/40 rounded-md border border-phantix-700/40 bg-phantix-950/50">
               {[
                 ["Tenant ID", `#${state.org.id}`],
                 ["Slug", state.org.slug],
                 ["Creator", state.org.creator_user_id != null ? `#${state.org.creator_user_id}` : "Not set"],
               ].map(([k, v]) => (
-                <div key={k} className="flex items-center justify-between gap-3 rounded-md border border-phantix-700/40 bg-phantix-950/50 px-4 py-3">
+                <div key={k} className="flex items-center justify-between gap-3 px-3.5 py-2">
                   <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-slate-500">{k}</span>
                   <button
                     className="flex min-w-0 items-center gap-2 font-mono text-sm text-slate-200 hover:text-gold-300"
@@ -167,7 +171,7 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-            <Link to="/identity" className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-gold-400 hover:text-gold-300">
+            <Link to="/identity" className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-gold-400 hover:text-gold-300">
               Manage identity and keys <ArrowRight size={12} />
             </Link>
           </Card>
@@ -175,7 +179,7 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom row */}
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Recent audit */}
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24 }}>
           <CollapsibleCard title="Recent activity" action={<ScrollText size={15} className="text-slate-500" />}>
@@ -202,9 +206,9 @@ export default function Dashboard() {
           <Card className="relative overflow-hidden">
             <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold-400/10 blur-[70px]" />
             <CardHeader title="Ready for operations?" subtitle="The Command Centre is where scans, campaigns, risks and reports live" />
-            <div className="relative flex flex-wrap items-center gap-4">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gold-400/15 text-gold-400">
-                <Rocket size={24} />
+            <div className="relative flex flex-wrap items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-400/15 text-gold-400">
+                <Rocket size={17} />
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm leading-6 text-slate-300">
@@ -212,7 +216,7 @@ export default function Dashboard() {
                     ? "Your security database is ready --- the Command Centre is unblocked."
                     : "Connect and bootstrap your security database first --- the platform blocks scans and VAPT without it."}
                 </p>
-                <div className="mt-2 flex items-center gap-2">
+                <div className="mt-1 flex items-center gap-2">
                   <StatusBadge status={securityDbReady ? "ready" : "pending"} />
                   <span className="text-xs text-slate-500">{securityDbReady ? "bootstrap gate passed" : "bootstrap gate"}</span>
                 </div>
