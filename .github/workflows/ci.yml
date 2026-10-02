@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feature/ui-overhaul-vercel]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        run: npm install
+
+      # Guards the class of bug that broke the Connections form:
+      # an async handler reading e.currentTarget/e.target after an await.
+      - name: Event-after-await guard
+        run: npm run lint:events
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
