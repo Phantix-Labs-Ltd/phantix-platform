@@ -223,20 +223,21 @@ export default function AiSettings() {
         actions={<DocLink docId="howto-platform-index" label="Platform how-to index" />}
       />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <Card>
             <CardHeader title="AI engine" subtitle="Provider and mode for this tenant" action={<Sparkles size={16} className="text-gold-400" />} />
-            <div className="grid grid-cols-2 gap-3">
+            {/* Four facts in one divided strip, not four boxed tiles. */}
+            <div className="grid grid-cols-2 divide-phantix-700/40 rounded-md border border-phantix-700/40 bg-phantix-950/50 sm:grid-cols-4 sm:divide-x">
               {[
                 ["Status", ai.enabled ? "Enabled" : "Disabled"],
                 ["Default provider", ai.default_provider || "---"],
                 ["Mode", ai.mode || "---"],
                 ["Pentest AI", ai.ai_pentest_ready ? "Ready" : "Gated"],
               ].map(([k, v]) => (
-                <div key={k} className="rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3.5">
-                  <p className="text-[12px] uppercase tracking-wider text-slate-500">{k}</p>
-                  <p className="mt-1 font-medium capitalize text-slate-200">{v}</p>
+                <div key={k} className="min-w-0 px-3 py-2">
+                  <p className="truncate text-[12px] uppercase tracking-wider text-slate-500">{k}</p>
+                  <p className="truncate text-sm font-medium capitalize text-slate-200">{v}</p>
                 </div>
               ))}
             </div>
@@ -264,8 +265,9 @@ export default function AiSettings() {
             </div>
             <div className="mt-4">
               <label className="label">AI mode</label>
+              <div className="flex gap-2">
               <select
-                className="input"
+                className="input flex-1"
                 value={ai.mode}
                 onChange={(e) => setAi((a) => (a ? { ...a, mode: e.target.value } : a))}
               >
@@ -273,23 +275,24 @@ export default function AiSettings() {
                 <option value="balanced">Balanced</option>
                 <option value="enterprise">Enterprise</option>
               </select>
+              <button
+                className="btn-secondary shrink-0"
+                onClick={() => void saveMode()}
+                disabled={modeSaving}
+              >
+                {modeSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Save AI mode
+              </button>
+              </div>
             </div>
-            <button
-              className="btn-secondary mt-5 w-full"
-              onClick={() => void saveMode()}
-              disabled={modeSaving}
-            >
-              {modeSaving ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Save AI mode
-            </button>
           </Card>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="space-y-5">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }} className="space-y-4">
           {/* Interactive controls first — the usage figures below are reference. */}
           {/* SecureGraph Agent toggle */}
           <Card className="border-gold-400/25">
             <CardHeader title="SecureGraph Agent" subtitle="Conversational security assistant for the Command Centre" action={<Bot size={16} className="text-gold-400" />} />
-            <div className="flex items-center justify-between gap-4 rounded-md border border-phantix-700/40 bg-phantix-950/50 p-4">
+            <div className="flex items-center justify-between gap-4 rounded-md border border-phantix-700/40 bg-phantix-950/50 px-3.5 py-2.5">
               <div>
                 <p className="text-sm font-semibold text-slate-200">{ai.agent_enabled ? "Enabled" : "Disabled"}</p>
                 <p className="mt-0.5 text-xs leading-5 text-slate-500">
@@ -313,7 +316,7 @@ export default function AiSettings() {
               </p>
             ) : (
               <>
-                <div className="flex items-center justify-between gap-4 rounded-md border border-phantix-700/40 bg-phantix-950/50 p-4">
+                <div className="flex items-center justify-between gap-4 rounded-md border border-phantix-700/40 bg-phantix-950/50 px-3.5 py-2.5">
                   <div>
                     <p className="text-sm font-semibold text-slate-200">{ai.free_models_enabled ? "Enabled" : "Not enabled"}</p>
                     <p className="mt-0.5 text-xs leading-5 text-slate-500">
@@ -343,7 +346,7 @@ export default function AiSettings() {
           {/* Continuous PR — org opt-in; opens app-signed draft PRs */}
           <Card className="border-gold-400/25">
             <CardHeader title="Continuous PR" subtitle="Ephemeral clone → app-signed commit → draft PR" action={<GitPullRequest size={16} className="text-gold-400" />} />
-            <div className="flex items-center justify-between gap-4 rounded-md border border-phantix-700/40 bg-phantix-950/50 p-4">
+            <div className="flex items-center justify-between gap-4 rounded-md border border-phantix-700/40 bg-phantix-950/50 px-3.5 py-2.5">
               <div>
                 <p className="text-sm font-semibold text-slate-200">{ai.continuous_pr_enabled ? "Enabled" : "Disabled"}</p>
                 <p className="mt-0.5 text-xs leading-5 text-slate-500">

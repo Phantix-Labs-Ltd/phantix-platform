@@ -542,7 +542,7 @@ export default function AgiSettings() {
             {bootstrap?.test_accounts.length === 0 ? (
               <EmptyState icon={<KeyRound size={22} />} title="No test accounts" body="Add reusable login and registration credentials so that AGI can use them automatically in each environment." />
             ) : (
-              <div className="-mx-5 -mb-5 overflow-x-auto">
+              <div className="-mx-4 -mb-4 overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-phantix-700/40">

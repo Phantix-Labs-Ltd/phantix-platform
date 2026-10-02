@@ -294,6 +294,10 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
         className="space-y-4"
         onSubmit={async (e) => {
           e.preventDefault();
+          // Capture the form element synchronously: React nulls ``e.currentTarget``
+          // once this async handler awaits, so ``new FormData(e.currentTarget)``
+          // threw "parameter 1 is not of type 'HTMLFormElement'" after dual-control.
+          const form = e.currentTarget;
           // Enforce dual control
           if (!state.dualControl.configured) {
             toast("warning", "Audit control required", "Set up the audit controller on the People page first.");
@@ -303,7 +307,7 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
             const ok = await requireDualControl("Managing security database connections requires a dual-control operate session.");
             if (!ok) return;
           }
-          const f = new FormData(e.currentTarget);
+          const f = new FormData(form);
           setBusy(true);
           try {
             let host = String(f.get("host")).trim();
@@ -312,7 +316,7 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
               name: String(f.get("name")),
               connection_purpose: purpose,
               db_type: String(f.get("db_type")),
-              host: String(f.get("host")),
+              host,
               port: Number(f.get("port")),
               database_name: String(f.get("database_name")),
               target_schema: String(f.get("target_schema")) || "phantix",

@@ -411,7 +411,7 @@ export default function GithubIntegration() {
             {filtered.length === 0 ? (
               <p className="py-8 text-center text-sm text-slate-500">No repositories. Connect a GitHub account to see repos.</p>
             ) : (
-              <div className="-mx-5 -mb-5 overflow-x-auto">
+              <div className="-mx-4 -mb-4 overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-phantix-700/40">
@@ -625,7 +625,7 @@ function BranchReviewer({ repos }: { repos: Repo[] }) {
         ) : repos.length === 0 ? (
           <EmptyRepoNote />
         ) : (
-          <div className="-mx-5 -mb-5 overflow-x-auto">
+          <div className="-mx-4 -mb-4 overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-phantix-700/40">

@@ -583,7 +583,7 @@ export default function Billing() {
       {payments.length > 0 && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="mt-4">
           <CollapsibleCard defaultOpen={false} title="Payment history" subtitle={`${payments.length} invoices`}>
-            <div className="-mx-5 -mb-5 overflow-x-auto">
+            <div className="-mx-4 -mb-4 overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-phantix-700/40">

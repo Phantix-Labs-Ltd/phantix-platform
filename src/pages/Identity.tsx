@@ -8,7 +8,7 @@ import TypeToConfirm from "@/components/TypeToConfirm";
 import DocLink from "@/components/DocLink";
 import DomainVerificationCard from "@/components/DomainVerificationCard";
 import ProfileCompletionNotice from "@/components/ProfileCompletionNotice";
-import { PageHeader, Card, CardHeader, CollapsibleCard, StatusBadge, Modal, CopyChip, Tabs, EmptyState, Spinner } from "@/components/ui";
+import { PageHeader, Card, CardHeader, CollapsibleCard, StatusBadge, Modal, CopyChip, KeyValueList, Tabs, EmptyState, Spinner } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { api, mediaUrl } from "@/lib/api";
 import type { Organization, OrgContact } from "@/lib/types";
@@ -238,12 +238,12 @@ export default function Identity() {
       />
 
       {tab === "overview" && (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <Card>
               <CardHeader title="Tenant identity" subtitle="Registered identity details for this organization" action={<Building2 size={16} className="text-slate-500" />} />
-              <div className="space-y-2.5">
-                {[
+              <KeyValueList
+                rows={[
                   ["Organization", state.org.name],
                   ["Tenant ID", `#${state.identity?.id ?? state.org.id}`],
                   ["Slug", state.identity?.slug || state.org.slug],
@@ -253,14 +253,9 @@ export default function Identity() {
                   ["Country", state.org.country || "---"],
                   ["Industry", state.org.industry || "---"],
                   ["Plan", state.org.plan || "---"],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-phantix-700/40 bg-phantix-950/50 px-4 py-3">
-                    <span className="text-xs font-medium uppercase tracking-wider text-slate-500">{k}</span>
-                    <CopyChip value={String(v)} />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
+                ].map(([k, v]) => [k, <CopyChip key={k} value={String(v)} />] as const)}
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
                 {[
                   ["Setup", state.org.setup_completed || state.setup.setup_complete],
                   ["Email OTP", state.org.email_verified || state.org.identity_verified || state.setup.identity_verified],
@@ -290,21 +285,15 @@ export default function Identity() {
               ) : (
                 <p className="text-sm text-slate-500">No primary contact on file --- edit Company profile.</p>
               )}
-              <div className="mt-5 grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3">
-                  <p className="text-slate-500">Website</p>
-                  <p className="mt-1 truncate text-slate-200">{state.org.website || "---"}</p>
-                </div>
-                <div className="rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3">
-                  <p className="text-slate-500">Phone</p>
-                  <p className="mt-1 text-slate-200">{state.org.phone || "---"}</p>
-                </div>
-                <div className="rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3 col-span-2">
-                  <p className="text-slate-500">Legal name</p>
-                  <p className="mt-1 text-slate-200">{state.org.legal_name || "---"}</p>
-                </div>
-              </div>
-              <button className="btn-secondary mt-4 w-full" onClick={() => setTab("profile")}>Edit full profile</button>
+              <KeyValueList
+                className="mt-3 text-sm"
+                rows={[
+                  ["Website", <span key="w" className="block truncate text-slate-200">{state.org.website || "---"}</span>],
+                  ["Phone", <span key="p" className="text-slate-200">{state.org.phone || "---"}</span>],
+                  ["Legal name", <span key="l" className="text-slate-200">{state.org.legal_name || "---"}</span>],
+                ]}
+              />
+              <button className="btn-secondary mt-3 w-full !py-2" onClick={() => setTab("profile")}>Edit full profile</button>
             </Card>
           </motion.div>
         </div>
