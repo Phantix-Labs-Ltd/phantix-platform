@@ -108,7 +108,10 @@ export default function AcceptableUsePolicy() {
               <p className="mt-3 text-sm leading-6 text-slate-300">
                 Use the SecureGraph platform only to assess, discover, or test systems you own or for which
                 you hold written authorization from the lawful owner. Confirm ownership or authorization
-                in the platform before active testing; all activity is logged and auditable.
+                in the platform before active testing; all activity is logged and auditable. For targets that
+                can't be verified technically, such as IP addresses and ranges, accepting this policy is your
+                confirmation that you own them or are authorized in writing to test them. We rely on it without
+                checking, and you are solely responsible for those targets and for testing them.
               </p>
             </div>
 

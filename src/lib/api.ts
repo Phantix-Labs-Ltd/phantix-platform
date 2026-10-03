@@ -79,7 +79,33 @@ export const tokens = {
   set dualControl(v: string | null) { writeSessionToken("platform_dual_control", v); },
   get email() { return readToken("platform_company_email"); },
   set email(v: string | null) { writeToken("platform_company_email", v); },
+  /** Solo-mode step-up token (dual control off): per tab, dropped once expired. */
+  get stepUp() {
+    const exp = Number(readSessionToken("platform_step_up_exp") || 0);
+    if (exp && exp <= Date.now()) {
+      writeSessionToken("platform_step_up", null);
+      writeSessionToken("platform_step_up_exp", null);
+      return null;
+    }
+    return readSessionToken("platform_step_up");
+  },
+  set stepUp(v: string | null) { writeSessionToken("platform_step_up", v); if (!v) writeSessionToken("platform_step_up_exp", null); },
 };
+
+/** Store a step-up token with its lifetime (seconds) from the verify response. */
+export function setStepUpToken(token: string, expiresInSec: number): void {
+  tokens.stepUp = token;
+  writeSessionToken("platform_step_up_exp", String(Date.now() + Math.max(30, expiresInSec - 15) * 1000));
+}
+
+/**
+ * Solo mode: a sensitive action answered with `step_up_required` asks this
+ * handler (the store's step-up prompt) for a code, then retries once.
+ */
+let stepUpHandler: ((reason: string) => Promise<boolean>) | null = null;
+export function setStepUpHandler(fn: ((reason: string) => Promise<boolean>) | null): void {
+  stepUpHandler = fn;
+}
 
 /** Read email claim from company JWT (payload is base64url JSON). */
 export function emailFromToken(token?: string | null): string {
@@ -323,6 +349,13 @@ export class ApiError extends Error {
   }
 }
 
+/** Machine-readable code from `{ detail: { code, message } }` errors, or null. */
+export function errorCode(err: unknown): string | null {
+  if (!(err instanceof ApiError)) return null;
+  const d = err.detail as { code?: unknown } | null;
+  return d && typeof d === "object" && typeof d.code === "string" ? d.code : null;
+}
+
 /**
  * Wait (seconds) carried by a 429 "too many failed attempts" response, if the
  * server put a number in the detail. No Retry-After header yet — callers should
@@ -366,14 +399,26 @@ export function clearCorrelationId(): void {
   lastCorrelationId = null;
 }
 
-async function request<T>(
-  method: string,
-  path: string,
-  opts: { body?: unknown; dualControl?: boolean; form?: Record<string, string>; authClearOn401?: boolean } = {},
-): Promise<T> {
+type RequestOpts = { body?: unknown; dualControl?: boolean; form?: Record<string, string>; authClearOn401?: boolean };
+
+async function request<T>(method: string, path: string, opts: RequestOpts = {}): Promise<T> {
+  try {
+    return await requestOnce<T>(method, path, opts);
+  } catch (err) {
+    if (!(err instanceof ApiError) || err.status !== 403 || !stepUpHandler) throw err;
+    const d = err.detail as { code?: unknown; message?: unknown } | null;
+    if (!d || typeof d !== "object" || d.code !== "step_up_required") throw err;
+    tokens.stepUp = null;
+    if (!(await stepUpHandler(typeof d.message === "string" ? d.message : ""))) throw err;
+    return requestOnce<T>(method, path, opts);
+  }
+}
+
+async function requestOnce<T>(method: string, path: string, opts: RequestOpts = {}): Promise<T> {
   const headers: Record<string, string> = {};
   headers["X-Device-Id"] = deviceId();
   headers["X-Client-Surface"] = "platform";
+  if (method !== "GET" && tokens.stepUp) headers["X-Step-Up-Token"] = tokens.stepUp;
   const bearer = tokens.orgUser ?? tokens.platform;
   if (bearer) headers["Authorization"] = `Bearer ${bearer}`;
   const sentDualControl = !!tokens.dualControl && opts.dualControl === true;
@@ -397,6 +442,10 @@ async function request<T>(
     // Support triage: remember the correlation id even on success, so the next
     // failure can be traced back (00-shared-auth-and-client.md §6).
     trackCorrelationId(res);
+    // The proxy answers 502/503/504 when the backend itself is down.
+    if (res.status === 502 || res.status === 503 || res.status === 504) {
+      window.dispatchEvent(new CustomEvent("phantix:network-error"));
+    }
     // Operate session is an idle session on the backend: every successful mutation
     // that used it counts as activity and slides the FE expiry forward so the user
     // is not asked for another code while still working.
@@ -460,6 +509,10 @@ async function request<T>(
     }
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
+  } catch (err) {
+    // No response at all: let the connection watch check offline vs server down.
+    if (err instanceof TypeError) window.dispatchEvent(new CustomEvent("phantix:network-error"));
+    throw err;
   } finally {
     clearTimeout(timer);
   }

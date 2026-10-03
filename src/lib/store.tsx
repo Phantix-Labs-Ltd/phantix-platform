@@ -1,7 +1,8 @@
 import React, { createContext, useCallback, useContext, useMemo, useRef, useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, AlertTriangle, Info, XCircle, X } from "lucide-react";
-import { tokens, DEMO_MODE, delay, api, deviceId, emailFromToken, clearCorrelationId, isPendingApproval } from "./api";
+import { tokens, DEMO_MODE, delay, api, deviceId, emailFromToken, clearCorrelationId, isPendingApproval, setStepUpHandler } from "./api";
+import { fetchOnboarding, recordMilestone, dismissOnboarding as postDismissOnboarding, type MilestoneKey, type Onboarding } from "./onboarding";
 import { claimExchange, newExchangeGuard } from "./deviceConfirm";
 import {
   emptyOrg,
@@ -160,6 +161,29 @@ type Session = {
  * redirecting abruptly, so the user can return to it after signing back in.
  */
 type SessionExpired = { active: boolean; returnTo: string };
+
+/** Where sign-up sends the user next (self-serve onboarding contract C1/C2). */
+export type OnboardingNext = "verify_email" | "first_asset" | "setup";
+export type RegisterResult = { signedIn: boolean; next: OnboardingNext; emailVerified: boolean };
+export type GithubAuthResult =
+  | { kind: "signed_in"; next: OnboardingNext }
+  | { kind: "signup"; signupToken: string; email: string; name: string; suggestedCompany: string };
+
+type SessionTokenResponse = {
+  access_token: string;
+  organization_id?: number;
+  organization_slug?: string;
+  experience?: { organization_name?: string };
+  organization?: { id?: number; name?: string; slug?: string };
+  must_change_password?: boolean;
+  platform_access?: boolean;
+  role?: string;
+  email_verified?: boolean;
+  next?: string;
+};
+
+const asNext = (n: unknown, emailVerified: boolean): OnboardingNext =>
+  n === "verify_email" || n === "first_asset" || n === "setup" ? n : emailVerified ? "first_asset" : "verify_email";
 
 interface PersistedState {
   org: Organization;
@@ -489,8 +513,24 @@ type Store = {
   /** End the app session and raise the "sign back in" card in place. */
   expireSession: () => void;
   billingEntitlements: Record<string, any> | null;
+  /** Solo-mode identity check for sensitive actions (see StepUpPrompt). */
+  stepUpPrompt: { open: boolean; reason: string };
+  closeStepUpPrompt: (success: boolean) => void;
+  /** Onboarding milestones (C4); null until loaded or on a backend without them. */
+  onboarding: Onboarding | null;
+  refreshOnboarding: () => Promise<void>;
+  markMilestone: (key: MilestoneKey) => Promise<void>;
+  dismissOnboarding: () => Promise<void>;
   // auth
-  register: (name: string, email: string, password: string, country: string, slug: string, industry: string, secondary_email: string, primary_contact: {title: string, name: string}) => Promise<{ mfaRequired: boolean }>;
+  /** Slim sign-up (company, email, password). `signedIn` is false only on a
+   *  backend that still issues no token at registration. */
+  register: (companyName: string, email: string, password: string) => Promise<RegisterResult>;
+  /** Start GitHub sign-in / sign-up: resolves to GitHub's authorize URL. */
+  githubAuthStart: (intent: "login" | "signup") => Promise<string>;
+  /** Finish the GitHub redirect: signs in an existing org, or returns the
+   *  sign-up details for a new one. */
+  githubAuthCallback: (code: string, state: string) => Promise<GithubAuthResult>;
+  registerWithGithub: (signupToken: string, companyName: string) => Promise<RegisterResult>;
   login: (email: string, password: string) => Promise<{ mfaRequired: boolean; destinationMasked?: string; mustChangePassword?: boolean; platformAccess?: boolean; role?: string }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   verifyMfa: (code: string) => Promise<void>;
@@ -555,7 +595,7 @@ type Store = {
       ssl_mode?: string;
       environment?: string;
     },
-  ) => Promise<void>;
+  ) => Promise<number | null>;
   testConnection: (id: number) => Promise<void>;
   bootstrapConnection: (id: number) => Promise<{ pending: boolean }>;
   deleteConnection: (id: number) => Promise<{ pending: boolean }>;
@@ -635,6 +675,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [sessionLoading, setSessionLoading] = useState(!!(tokens.platform && !DEMO_MODE));
   const [sessionExpired, setSessionExpired] = useState<SessionExpired>({ active: false, returnTo: "" });
   const [billingEntitlements, setBillingEnts] = useState<Record<string, any> | null>(null);
+  const [onboarding, setOnboarding] = useState<Onboarding | null>(null);
+  const [stepUpPrompt, setStepUpPrompt] = useState<{ open: boolean; reason: string }>({ open: false, reason: "" });
+  const stepUpResolve = useRef<((ok: boolean) => void) | null>(null);
+  const closeStepUpPrompt = useCallback((success: boolean) => {
+    setStepUpPrompt({ open: false, reason: "" });
+    const resolve = stepUpResolve.current;
+    stepUpResolve.current = null;
+    resolve?.(success);
+  }, []);
+  useEffect(() => {
+    setStepUpHandler((reason) => {
+      if (stepUpResolve.current) return Promise.resolve(false);
+      return new Promise<boolean>((resolve) => {
+        stepUpResolve.current = resolve;
+        setStepUpPrompt({ open: true, reason });
+      });
+    });
+    return () => setStepUpHandler(null);
+  }, []);
+  const refreshOnboarding = useCallback(async () => { setOnboarding(await fetchOnboarding()); }, []);
+  // The demo never hydrates from the API, so load its checklist once here.
+  useEffect(() => { if (DEMO_MODE) void refreshOnboarding(); }, [refreshOnboarding]);
+  const markMilestone = useCallback(async (key: MilestoneKey) => {
+    setOnboarding((o) => o && {
+      ...o,
+      milestones: o.milestones.map((m) => (m.key === key && !m.done_at ? { ...m, done_at: new Date().toISOString() } : m)),
+    });
+    await recordMilestone(key);
+  }, []);
+  const dismissOnboarding = useCallback(async () => {
+    setOnboarding((o) => o && { ...o, dismissed: true });
+    await postDismissOnboarding();
+  }, []);
 
   const clearSessionExpired = useCallback(() => {
     setSessionExpired({ active: false, returnTo: "" });
@@ -776,6 +849,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         dualControl = {
           configured: Boolean(d.configured ?? (initId && authId)),
           require_dual_control: Boolean(d.require_dual_control ?? true),
+          policy_mode: d.policy_mode === "off" || d.policy_mode === "on" || d.policy_mode === "enforced" ? d.policy_mode : null,
           initiator_user_id: initId,
           authorizer_user_id: authId,
           email_policy: ep ? {
@@ -843,7 +917,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setup: mappedSetup
           ? {
               ...mappedSetup.setup,
-              email_otp_destination: mappedSetup.setup.email_otp_destination || displayEmail || null,
+              // The server doesn't report a sent code; keep what this tab knows
+              // (register sends one, as does "Send code").
+              email_otp_sent: mappedSetup.setup.email_otp_sent || s.setup.email_otp_sent,
+              email_otp_destination: mappedSetup.setup.email_otp_destination || s.setup.email_otp_destination || displayEmail || null,
               setup_complete: mappedSetup.setup.setup_complete || org.setup_completed,
               identity_verified: mappedSetup.setup.identity_verified || org.identity_verified || org.email_verified,
               privacy_accepted: mappedSetup.setup.privacy_accepted || org.privacy_notice_accepted,
@@ -887,6 +964,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         tickets: ticketsRes ? mapTicketsFromApi(ticketsRes) : s.tickets,
       }));
       setSession({ authenticated: true, email: displayEmail });
+      await refreshOnboarding();
     } catch {
       const fallback = email || emailFromToken() || tokens.email || "";
       if (fallback) {
@@ -902,7 +980,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       hydrating.current = false;
       setSessionLoading(false);
     }
-  }, [persist, expireSession]);
+  }, [persist, expireSession, refreshOnboarding]);
 
   const toast = useCallback((kind: ToastKind, title: string, body?: string) => {
     const id = ++toastId.current;
@@ -927,33 +1005,103 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   );
 
   // ── Auth ────────────────────────────────────────────────────────────────
+  /** Adopt an org JWT from register / GitHub sign-in the same way login does. */
+  const startSession = useCallback(async (res: SessionTokenResponse, email: string) => {
+    tokens.platform = res.access_token;
+    tokens.orgUser = null;
+    tokens.email = email;
+    setState(emptyState());
+    setSessionExpired({ active: false, returnTo: "" });
+    setSession({
+      authenticated: true,
+      email,
+      mustChangePassword: Boolean(res.must_change_password),
+      platformAccess: res.platform_access ?? true,
+      role: res.role,
+    });
+    persist((s) => ({
+      ...s,
+      org: {
+        ...s.org,
+        id: res.organization_id ?? res.organization?.id ?? 0,
+        name: res.experience?.organization_name || res.organization?.name || "",
+        slug: res.organization_slug || res.organization?.slug || "",
+        email,
+        primary_email: email,
+      },
+      setup: emptySetup(),
+    }));
+    await hydrateSession(email);
+  }, [persist, hydrateSession]);
+
   const register = useCallback(
-    async (name: string, email: string, _password: string, country: string, slug: string, industry: string, secondary_email: string, primary_contact: {title: string, name: string}) => {
+    async (name: string, email: string, password: string): Promise<RegisterResult> => {
       if (DEMO_MODE) {
         await delay(700);
         persist((s) => ({
           ...s,
-          org: { ...s.org, name, email, primary_email: email, country, slug, industry },
-          setup: emptySetup(),
+          org: { ...s.org, name, email, primary_email: email },
+          setup: { ...emptySetup(), privacy_accepted: true },
           audit: [{ id: s.nextId, event_key: "org.register", category: "auth", action: `Organization registered: ${name}`, initiator_name: email, initiator_title: "Primary email", authorizer_name: null, authorizer_title: null, created_at: new Date().toISOString() }, ...s.audit],
           nextId: s.nextId + 1,
         }));
         tokens.platform = "demo.company.jwt";
         tokens.email = email;
         setSession({ authenticated: true, email });
-        return { mfaRequired: false };
+        return { signedIn: true, next: "verify_email", emailVerified: false };
       }
-      await api.post("/organizations/register", { name, email, password: _password, country, slug, industry, secondary_email, primary_contact });
-      // Per 01_ORG_SETUP_IMPLEMENTATION.md §3.1: register returns 201 + org profile, NO JWT.
-      // Do NOT auto-login --- the user signs in on /login (email prefilled).
-      persist((s) => ({
-        ...s,
-        org: { ...s.org, name, email, primary_email: email, country, slug, industry },
-      }));
-      return { mfaRequired: false };
+      // C1: terms are accepted on the form, the slug is generated server-side,
+      // and the response carries a session so there is no second sign-in.
+      const res = await api.post<Partial<SessionTokenResponse>>("/organizations/register", {
+        company_name: name, email, password, accept_terms: true,
+      });
+      const emailVerified = Boolean(res?.email_verified);
+      if (!res?.access_token) {
+        // Older backend: no token at registration --- the user signs in on /login.
+        persist((s) => ({ ...s, org: { ...s.org, name, email, primary_email: email } }));
+        return { signedIn: false, next: "setup", emailVerified };
+      }
+      await startSession(res as SessionTokenResponse, email);
+      // Registration already emailed the setup code: open the wizard on the code field.
+      const otp = (res as { otp?: { destination_masked?: string } | null }).otp;
+      if (otp) persist((s) => ({ ...s, setup: { ...s.setup, email_otp_sent: true, email_otp_destination: otp.destination_masked || email } }));
+      return { signedIn: true, next: asNext(res.next, emailVerified), emailVerified };
     },
-    [persist, hydrateSession],
+    [persist, startSession],
   );
+
+  const githubAuthStart = useCallback(async (intent: "login" | "signup") => {
+    const res = await api.get<{ authorize_url: string }>(`/organizations/auth/github/start?intent=${intent}`);
+    return res.authorize_url;
+  }, []);
+
+  const githubAuthCallback = useCallback(async (code: string, oauthState: string): Promise<GithubAuthResult> => {
+    const res = await api.post<Partial<SessionTokenResponse> & {
+      signup_token?: string; email?: string; name?: string; suggested_company?: string;
+    }>("/organizations/auth/github/callback", { code, state: oauthState });
+    if (res.access_token) {
+      const email = res.email || emailFromToken(res.access_token) || "";
+      await startSession(res as SessionTokenResponse, email);
+      return { kind: "signed_in", next: asNext(res.next, true) };
+    }
+    return {
+      kind: "signup",
+      signupToken: res.signup_token || "",
+      email: res.email || "",
+      name: res.name || "",
+      suggestedCompany: res.suggested_company || "",
+    };
+  }, [startSession]);
+
+  const registerWithGithub = useCallback(async (signupToken: string, companyName: string): Promise<RegisterResult> => {
+    const res = await api.post<SessionTokenResponse & { organization?: { email?: string } }>(
+      "/organizations/register/github",
+      { signup_token: signupToken, company_name: companyName, accept_terms: true },
+    );
+    const email = res.organization?.email || emailFromToken(res.access_token) || "";
+    await startSession(res, email);
+    return { signedIn: true, next: asNext(res.next, true), emailVerified: true };
+  }, [startSession]);
 
   const login = useCallback(async (email: string, password: string) => {
     if (DEMO_MODE) {
@@ -2092,10 +2240,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           nextId: s.nextId + 1,
         }));
         logAudit("db_connection.create", "connections", `Created connection: ${c.name}`);
-        return;
+        return state.nextId;
       }
       const needsDc = !!tokens.dualControl;
-      await api.post<unknown>(
+      const created = await api.post<Record<string, unknown>>(
         "/db-connections",
         {
           name: c.name,
@@ -2115,8 +2263,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       );
       await refreshConnections();
       logAudit("db_connection.create", "connections", `Created connection: ${c.name}`);
+      return (created && extractId(created)) || null;
     },
-    [persist, logAudit, refreshConnections],
+    [persist, logAudit, refreshConnections, state.nextId],
   );
 
   const testConnection = useCallback(
@@ -2133,6 +2282,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // Per 01_ORG_SETUP_IMPLEMENTATION.md §7.1 / 02_PLATFORM §4: test?auto_bootstrap=true
       // probes connectivity AND applies the security schema in one call.
       const res = await api.post<Record<string, unknown>>(`/db-connections/${id}/test?auto_bootstrap=true`, undefined, needsDc ? { dualControl: true } : undefined);
+      // The probe answers 200 either way; `success: false` means it couldn't
+      // connect (wrong password, missing database, unreachable host).
+      if (res && res.success === false) {
+        persist((s) => ({
+          ...s,
+          connections: s.connections.map((c) => (c.id === id ? { ...c, last_test_at: new Date().toISOString(), last_test_ok: false } : c)),
+        }));
+        await refreshConnections();
+        throw new Error(typeof res.message === "string" && res.message ? res.message : "Couldn't connect to the database.");
+      }
       const row = mapConnectionFromApi(res);
       persist((s) => ({
         ...s,
@@ -2526,7 +2685,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Store>(
     () => ({
       session, state, operate, securityDbReady, sessionLoading, sessionExpired, clearSessionExpired, expireSession, billingEntitlements,
-      register, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession,
+      onboarding, refreshOnboarding, markMilestone, dismissOnboarding, stepUpPrompt, closeStepUpPrompt,
+      register, githubAuthStart, githubAuthCallback, registerWithGithub, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession,
       acceptPrivacy, saveIdentity, updateOrgProfile, sendOtp, verifyOtp, startDomainVerification, checkDomain, submitCac, skipCac, requestManualReview, completeSetup, refreshSetup,
       createUser, assignDualControl, unlockOperate, lockOperate,
       requireDualControl, dualControlPrompt, closeDualControlPrompt,
@@ -2538,7 +2698,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       toasts, toast, dismissToast,
     }),
     [session, state, operate, securityDbReady, sessionExpired, clearSessionExpired, expireSession, toasts, dualControlPrompt,
-      register, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession, acceptPrivacy, saveIdentity, updateOrgProfile, sendOtp, verifyOtp,
+      onboarding, refreshOnboarding, markMilestone, dismissOnboarding, stepUpPrompt, closeStepUpPrompt,
+      register, githubAuthStart, githubAuthCallback, registerWithGithub, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession, acceptPrivacy, saveIdentity, updateOrgProfile, sendOtp, verifyOtp,
       startDomainVerification, checkDomain, submitCac, skipCac, requestManualReview, completeSetup, refreshSetup,
       createUser, assignDualControl, unlockOperate, lockOperate,
       requireDualControl, closeDualControlPrompt, requestDualControlOtp, verifyDualControlOtp, confirmDualControlDevice,

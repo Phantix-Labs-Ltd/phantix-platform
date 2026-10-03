@@ -13,6 +13,7 @@ import { DEMO_MODE, AGI_ENABLED, publicDetailCopy } from "@/lib/api";
 import { APP_URL } from "@/lib/links";
 import { cx } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/Notifications";
 import SandboxBanner from "@/components/SandboxBanner";
 import { loadSandboxMe } from "@/lib/sandbox";
 import { RouteSkeleton } from "@/components/RouteSkeleton";
@@ -405,6 +406,7 @@ export default function Layout() {
                 </span>
               </NavLink>
             )}
+            <NotificationBell />
             <ThemeToggle />
             {sessionLoading ? (
               <span className="skeleton hidden h-7 w-40 rounded-md md:block" aria-hidden="true" />
