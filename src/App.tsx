@@ -10,6 +10,9 @@ import Login from "@/pages/auth/Login";
 import ChangePassword from "@/pages/auth/ChangePassword";
 import DeviceConfirm from "@/pages/DeviceConfirm";
 import Register from "@/pages/auth/Register";
+import GithubAuthCallback from "@/pages/auth/GithubAuthCallback";
+import StepUpPrompt from "@/components/StepUpPrompt";
+import AlertNotifications, { ConnectionWatch, NotificationProvider } from "@/components/Notifications";
 import Privacy from "@/pages/auth/Privacy";
 import Terms from "@/pages/auth/Terms";
 import AUP from "@/pages/auth/AUP";
@@ -17,6 +20,7 @@ import Cookies from "@/pages/auth/Cookies";
 import PasswordResetRequest from "@/pages/auth/PasswordResetRequest";
 import PasswordResetComplete from "@/pages/auth/PasswordResetComplete";
 import SetupWizard from "@/pages/setup/SetupWizard";
+import { isDone } from "@/lib/onboarding";
 import { AGI_ENABLED } from "@/lib/api";
 
 const Dashboard = React.lazy(() => import("@/pages/Dashboard"));
@@ -36,6 +40,7 @@ const AgentActivity = React.lazy(() => import("@/pages/AgentActivity"));
 const Alerts = React.lazy(() => import("@/pages/Alerts"));
 const Integrations = React.lazy(() => import("@/pages/Integrations"));
 const Sandbox = React.lazy(() => import("@/pages/Sandbox"));
+const GetStarted = React.lazy(() => import("@/pages/setup/GetStarted"));
 const DangerZone = React.lazy(() => import("@/pages/DangerZone"));
 const Docs = React.lazy(() => import("@/pages/Docs"));
 const DocPage = React.lazy(() => import("@/pages/DocPage"));
@@ -64,7 +69,7 @@ function RequireManagement({ children }: { children: React.ReactNode }) {
 
 // Setup wizard requires auth; once complete there is nothing to resume
 function SetupRoute() {
-  const { session, state, sessionLoading } = useStore();
+  const { session, state, sessionLoading, onboarding } = useStore();
   if (sessionLoading) {
     return (
       <div className="px-4 py-10 sm:px-8">
@@ -74,7 +79,12 @@ function SetupRoute() {
   }
   if (!session?.authenticated) return <Navigate to="/login" replace />;
   if (session?.mustChangePassword) return <Navigate to="/change-password" replace />;
-  if (state.setup.setup_complete) return <Navigate to="/dashboard" replace />;
+  if (state.setup.setup_complete) {
+    // First run continues to the Quick Scan; a backend without onboarding
+    // milestones (onboarding === null) keeps the old landing.
+    const firstRun = onboarding && !onboarding.dismissed && !isDone(onboarding, "quick_scan_done");
+    return <Navigate to={firstRun ? "/get-started" : "/dashboard"} replace />;
+  }
   return <SetupWizard />;
 }
 
@@ -82,9 +92,22 @@ function SetupRoute() {
  * App roots. `<Seo />` must render inside the router because it reads the
  * current path; `<BrowserRouter>` is mounted here rather than in main.tsx.
  */
+/** Live alerts and the connection notice, for a signed-in, set-up organization. */
+function PlatformNotifications() {
+  const { session, state } = useStore();
+  if (!session?.authenticated || !state.setup.setup_complete) return null;
+  return (
+    <>
+      <AlertNotifications />
+      <ConnectionWatch />
+    </>
+  );
+}
+
 export default function App() {
   return (
     <StoreProvider>
+      <NotificationProvider>
       <BrowserRouter>
         <Seo />
         <React.Suspense fallback={<ShellSkeleton />}>
@@ -93,6 +116,7 @@ export default function App() {
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/device-confirm" element={<DeviceConfirm />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/auth/github/callback" element={<GithubAuthCallback />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/aup" element={<AUP />} />
@@ -100,6 +124,7 @@ export default function App() {
             <Route path="/password-reset" element={<PasswordResetRequest />} />
             <Route path="/reset-password" element={<PasswordResetComplete />} />
             <Route path="/setup" element={<SetupRoute />} />
+            <Route path="/get-started" element={<RequireManagement><GetStarted /></RequireManagement>} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<RequireManagement><Dashboard /></RequireManagement>} />
               <Route path="/sandbox" element={<RequireManagement><Sandbox /></RequireManagement>} />
@@ -127,10 +152,13 @@ export default function App() {
             </Route>
           </Routes>
         </React.Suspense>
+        <StepUpPrompt />
+        <PlatformNotifications />
         <SessionExpiredOverlay />
         <ToastViewport />
         <CookieConsent />
       </BrowserRouter>
+      </NotificationProvider>
     </StoreProvider>
   );
 }

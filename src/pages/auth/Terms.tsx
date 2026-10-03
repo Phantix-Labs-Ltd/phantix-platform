@@ -122,7 +122,9 @@ export default function Terms() {
                 You must own, or hold written authorization from the owner for, every system, application, or
                 infrastructure you submit for assessment. You agree to maintain that authorization and to test
                 only in-scope assets. The platform requires confirmation of ownership or authorization before
-                active testing proceeds, and all activity is logged and auditable.
+                active testing proceeds, and all activity is logged and auditable. For IP addresses and other
+                targets that can't be verified technically, your acceptance of the Acceptable Use Policy is that
+                confirmation, and you indemnify SecureGraph for testing them.
               </p>
             </div>
 

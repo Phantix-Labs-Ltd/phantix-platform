@@ -10,6 +10,7 @@ import { BrandWordmark } from "@/components/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import AuthShowcase from "@/components/AuthShowcase";
 import { PasswordInput } from "@/components/ui";
+import GithubAuthButton from "@/components/GithubAuthButton";
 
 function NewsletterField() {
   const [email, setEmail] = useState("");
@@ -190,6 +191,7 @@ export default function Login() {
               <AnimatePresence mode="wait">
                 {stage === "password" ? (
                   <motion.form key="pw" initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -14 }} onSubmit={submit} className="space-y-4">
+                    <GithubAuthButton intent="login" onError={setError} />
                     <div>
                       <label className="label">Primary (company) email</label>
                       <div className="relative">
@@ -219,7 +221,7 @@ export default function Login() {
                     </p>
                     <p className="text-center text-xs text-slate-500">
                       New tenant?{" "}
-                      <Link to="/register" className="text-gold-400 hover:text-gold-300">Register your organization</Link>
+                      <Link to="/register" className="text-gold-400 hover:text-gold-300">Create a free account</Link>
                     </p>
                     <NewsletterField />
                     <p className="text-center text-[13px] text-slate-600">

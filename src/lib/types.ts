@@ -216,6 +216,8 @@ export interface SetupState {
 export interface DualControlAssignment {
   configured: boolean;
   require_dual_control: boolean;
+  /** Org policy: "off" is solo mode (no approver). null = backend predates it, behaves like "on". */
+  policy_mode?: "off" | "on" | "enforced" | null;
   initiator_user_id: number | null;
   authorizer_user_id: number | null;
   email_policy: DualControlEmailPolicy | null;

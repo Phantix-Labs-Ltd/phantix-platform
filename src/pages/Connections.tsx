@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, Plus, ShieldCheck, AlertTriangle, Loader2, Trash2, Zap, Info } from "lucide-react";
+import { Database, Plus, ShieldCheck, AlertTriangle, Loader2, Trash2, Zap, Info, ArrowRight } from "lucide-react";
 import DocLink from "@/components/DocLink";
+import QuickConnectDatabase from "@/components/QuickConnectDatabase";
 import { PageHeader, Card, CollapsibleCard, StatusBadge, Modal, EmptyState } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { api, DEMO_MODE } from "@/lib/api";
@@ -16,6 +18,8 @@ export default function Connections() {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [drivers, setDrivers] = useState<{ db_type: string; live: boolean; note?: string }[]>([]);
   const [optionHints, setOptionHints] = useState<any>(null);
+  const [params] = useSearchParams();
+  const fromQuickScan = params.get("from") === "quick-scan";
 
   React.useEffect(() => {
     if (!DEMO_MODE) {
@@ -35,6 +39,7 @@ export default function Connections() {
 
   /** Dual control must be set up before managing DB connections. */
   const guard = async () => {
+    if (state.dualControl.policy_mode === "off") return true;
     if (!state.dualControl.configured) {
       toast("warning", "Audit control required", "Set up audit control on the People page before you manage database connections.");
       return false;
@@ -72,10 +77,19 @@ export default function Connections() {
           {securityDbReady ? (
             <><strong className="text-emerald-300">Bootstrap gate: ready.</strong> The primary security store is connected --- scans, VAPT and findings are unblocked.</>
           ) : (
-            <><strong className="text-severity-medium">Bootstrap gate: blocked.</strong> Create a security_data_storage connection, test it, then bootstrap. Until then the platform refuses scans and VAPT --- this is not just a UI state.</>
+            <><strong className="text-severity-medium">Not connected yet.</strong> Full scans, VAPT and saved findings need a security database. Quick Scans work without one.</>
           )}
         </p>
+        {securityDbReady && fromQuickScan && (
+          <Link to="/get-started" className="btn-primary ml-auto shrink-0 !py-1.5 text-xs">
+            Back to your Quick Scan <ArrowRight size={13} />
+          </Link>
+        )}
       </motion.div>
+
+      {!securityDbReady && (
+        <QuickConnectDatabase guard={guard} onManual={async () => { if (await guard()) setCreateOpen(true); }} />
+      )}
 
       {optionHints?.by_db_type && (
         <CollapsibleCard
@@ -298,8 +312,8 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
           // once this async handler awaits, so ``new FormData(e.currentTarget)``
           // threw "parameter 1 is not of type 'HTMLFormElement'" after dual-control.
           const form = e.currentTarget;
-          // Enforce dual control
-          if (!state.dualControl.configured) {
+          // Enforce dual control (solo mode has none to enforce)
+          if (state.dualControl.policy_mode !== "off" && !state.dualControl.configured) {
             toast("warning", "Audit control required", "Set up the audit controller on the People page first.");
             return;
           }

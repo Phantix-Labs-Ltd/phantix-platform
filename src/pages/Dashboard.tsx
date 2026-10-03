@@ -11,10 +11,11 @@ import { Card, CardHeader, CollapsibleCard, CompletionDonut, AnimatedNumber, Sta
 import { useStore } from "@/lib/store";
 import { useSmartPoll } from "@/lib/usePolling";
 import { APP_URL } from "@/lib/links";
+import { MILESTONE_META } from "@/lib/onboarding";
 import { timeAgo, cx } from "@/lib/utils";
 
 export default function Dashboard() {
-  const { state, securityDbReady, operate, toast, refreshSession } = useStore();
+  const { state, securityDbReady, operate, toast, refreshSession, onboarding, dismissOnboarding } = useStore();
   const navigate = useNavigate();
   const dc = state.dualControl;
   const twoUsers = state.users.length >= 2;
@@ -28,14 +29,21 @@ export default function Dashboard() {
     try { await refreshSession(); } catch { /* keep last data */ }
   }, { intervalMs: 60000, hiddenIntervalMs: 300000 });
 
-  const checklist = [
-    { done: state.setup.setup_complete, label: "Organization setup complete", to: "/dashboard" },
-    { done: twoUsers, label: "Two dual-control people created", to: "/users" },
-    { done: dc.configured, label: "Initiator + authorizer assigned", to: "/users" },
-    { done: operate.unlocked, label: "First operate unlock completed", to: "/users" },
-  ];
+  // Outcome checklist from the server's onboarding milestones. Dual control is
+  // optional and only offered once there is a second person to approve.
+  // Without milestones (older backend) the original setup checklist stays.
+  const checklist = onboarding
+    ? onboarding.milestones
+        .filter((m) => m.key !== "dual_control_enabled" || twoUsers || m.done_at)
+        .map((m) => ({ done: Boolean(m.done_at), label: MILESTONE_META[m.key].label, to: MILESTONE_META[m.key].to, optional: Boolean(m.optional) }))
+    : [
+        { done: state.setup.setup_complete, label: "Organization setup complete", to: "/dashboard", optional: false },
+        { done: twoUsers, label: "Two dual-control people created", to: "/users", optional: false },
+        { done: dc.configured, label: "Initiator + authorizer assigned", to: "/users", optional: false },
+        { done: operate.unlocked, label: "First operate unlock completed", to: "/users", optional: false },
+      ];
   const doneCount = checklist.filter((c) => c.done).length;
-  const gettingStartedDone = doneCount === checklist.length;
+  const gettingStartedDone = checklist.every((c) => c.done || c.optional) || Boolean(onboarding?.dismissed);
 
   // Profile completion — the same checklist the notice uses, shown as a gauge
   // once the getting-started steps are behind the admin.
@@ -118,7 +126,9 @@ export default function Dashboard() {
               <CardHeader
                 title="Getting started"
                 subtitle={`${doneCount} of ${checklist.length} complete`}
-                action={<ShieldCheck size={16} className="text-gold-400" />}
+                action={onboarding
+                  ? <button type="button" onClick={() => void dismissOnboarding()} className="text-xs text-slate-500 hover:text-slate-300">Hide</button>
+                  : <ShieldCheck size={16} className="text-gold-400" />}
               />
               <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-phantix-700/50">
                 <motion.div
@@ -140,6 +150,7 @@ export default function Dashboard() {
                   >
                     {c.done ? <CheckCircle2 size={16} className="shrink-0 text-emerald-400" /> : <Circle size={16} className="shrink-0 text-slate-600" />}
                     <span className={c.done ? "line-through opacity-70" : ""}>{c.label}</span>
+                    {c.optional && !c.done && <span className="text-[12px] text-slate-600">optional</span>}
                     {!c.done && <ArrowRight size={14} className="ml-auto shrink-0 text-gold-400" />}
                   </button>
                 ))}

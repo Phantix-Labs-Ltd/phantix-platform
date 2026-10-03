@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Building2, KeyRound, RefreshCw, ImagePlus, AlertTriangle, CheckCircle2, Layers, Save, User,
@@ -6,7 +7,9 @@ import {
 } from "lucide-react";
 import TypeToConfirm from "@/components/TypeToConfirm";
 import DocLink from "@/components/DocLink";
-import DomainVerificationCard from "@/components/DomainVerificationCard";
+import CompanyVerification from "@/components/CompanyVerification";
+import DualControlPolicyCard from "@/components/DualControlPolicyCard";
+import VerifiedDomainsCard from "@/components/VerifiedDomainsCard";
 import ProfileCompletionNotice from "@/components/ProfileCompletionNotice";
 import { PageHeader, Card, CardHeader, CollapsibleCard, StatusBadge, Modal, CopyChip, KeyValueList, Tabs, EmptyState, Spinner } from "@/components/ui";
 import { useStore } from "@/lib/store";
@@ -62,7 +65,20 @@ export default function Identity() {
     state, rotateServiceKey, revokeServiceKey, updateOrgProfile, savePreferredServices,
     uploadLogo, deleteLogo, toast, operate, requireDualControl, hydrateSession,
   } = useStore();
-  const [tab, setTab] = useState("overview");
+  // Applications link here to set something up: /identity?verify=acme.com#domains
+  // or /identity#dual-control. Open the tab that holds it and scroll to it.
+  const location = useLocation();
+  const verifyPrefill = new URLSearchParams(location.search).get("verify") || undefined;
+  const deepLinked = verifyPrefill || location.hash === "#domains" || location.hash === "#dual-control";
+  const [tab, setTab] = useState(deepLinked ? "verification" : "overview");
+  useEffect(() => {
+    if (!deepLinked) return;
+    setTab("verification");
+    const id = location.hash ? location.hash.slice(1) : "domains";
+    // Cards load their data first; wait a moment before scrolling to the anchor.
+    const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 400);
+    return () => window.clearTimeout(t);
+  }, [deepLinked, location.hash]);
   const [keyModal, setKeyModal] = useState<string | null>(null);
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [preferred, setPreferred] = useState<string[]>(() =>
@@ -230,6 +246,7 @@ export default function Identity() {
           { id: "overview", label: "Overview" },
           { id: "profile", label: "Company profile" },
           { id: "security", label: "Security posture" },
+          { id: "verification", label: "Verification and access" },
           { id: "keys", label: "Keys and branding" },
           { id: "privacy", label: "Privacy and data" },
         ]}
@@ -496,10 +513,6 @@ export default function Identity() {
             </Card>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }}>
-            <DomainVerificationCard />
-          </motion.div>
-
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
             <Card>
               <CardHeader title="Report branding" subtitle="PNG, JPEG, WebP or SVG. Up to 2 MB, shown on report covers and footers" action={<ImagePlus size={16} className="text-slate-500" />} />
@@ -588,6 +601,14 @@ export default function Identity() {
               </button>
             </Card>
           </motion.div>
+        </div>
+      )}
+
+      {tab === "verification" && (
+        <div className="space-y-4">
+          <VerifiedDomainsCard prefill={verifyPrefill} />
+          <CompanyVerification />
+          <DualControlPolicyCard />
         </div>
       )}
 
