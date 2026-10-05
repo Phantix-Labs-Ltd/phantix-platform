@@ -116,9 +116,23 @@ export default function VerifiedDomainsCard({ prefill }: { prefill?: string }) {
       <div id="domains" className="scroll-mt-24" />
       <CardHeader
         title="Verified domains"
-        subtitle="Prove you own a domain once and it covers every subdomain. Needed before active tests in solo mode."
+        subtitle="Verify every domain you want to test. You can add as many as you need, up to 50, and each one covers itself and all of its subdomains. Active tests and pentest agent targets must sit under a verified domain."
         action={<Globe size={16} className="text-slate-400" />}
       />
+
+      {items.length === 0 ? (
+        <p className="mt-3 rounded-md border border-dashed border-phantix-700/50 px-4 py-3 text-sm text-slate-400">
+          No domains yet. Add your company domain first, then any other domains you own, such as a product domain or a
+          regional site.
+        </p>
+      ) : (
+        <p className="mt-3 text-[13px] text-slate-500">
+          {items.filter((d) => d.status === "verified").length} verified
+          {items.some((d) => d.status !== "verified") && `, ${items.filter((d) => d.status !== "verified").length} waiting`}
+          {" · "}
+          {items.length} of 50 domains
+        </p>
+      )}
 
       {items.length > 0 && (
         <ul className="mt-3 divide-y divide-phantix-700/40 rounded-md border border-phantix-700/40">
@@ -171,7 +185,7 @@ export default function VerifiedDomainsCard({ prefill }: { prefill?: string }) {
 
       <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-2">
         <div className="min-w-0 flex-1">
-          <label className="label" htmlFor="vd-domain">Add a domain</label>
+          <label className="label" htmlFor="vd-domain">{items.length ? "Add another domain" : "Add a domain"}</label>
           <input id="vd-domain" className={cx("input font-mono", prefill && value === prefill && "ring-1 ring-gold-400/50")} value={value}
             onChange={(e) => setValue(e.target.value)} placeholder="acme.com" autoComplete="off" spellCheck={false} />
         </div>

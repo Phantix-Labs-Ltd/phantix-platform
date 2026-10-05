@@ -507,6 +507,8 @@ type Store = {
   operate: OperateState;
   securityDbReady: boolean;
   sessionLoading: boolean;
+  /** The first session restore has finished; later refreshes keep pages mounted. */
+  sessionHydrated: boolean;
   /** App session ended mid-use: hold the page under a "sign back in" card. */
   sessionExpired: SessionExpired;
   clearSessionExpired: () => void;
@@ -673,6 +675,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // under the "session has expired" card instead of a bare redirect to /login.
   const hadSessionAtBoot = useRef(!!tokens.platform);
   const [sessionLoading, setSessionLoading] = useState(!!(tokens.platform && !DEMO_MODE));
+  // True once the first session restore has finished. Route gates only show a
+  // skeleton before that: a later refresh (privacy accepted, a page refreshing
+  // its data) must not unmount the page, or a page that refreshes on mount
+  // (setup wizard, Identity) remounts and refreshes again in a loop, and any
+  // half-typed input such as the email OTP is lost.
+  const [sessionHydrated, setSessionHydrated] = useState(!(tokens.platform && !DEMO_MODE));
   const [sessionExpired, setSessionExpired] = useState<SessionExpired>({ active: false, returnTo: "" });
   const [billingEntitlements, setBillingEnts] = useState<Record<string, any> | null>(null);
   const [onboarding, setOnboarding] = useState<Onboarding | null>(null);
@@ -979,6 +987,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (hadSessionAtBoot.current && !tokens.platform) expireSession();
       hydrating.current = false;
       setSessionLoading(false);
+      setSessionHydrated(true);
     }
   }, [persist, expireSession, refreshOnboarding]);
 
@@ -1263,7 +1272,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     clearSessionExpired();
     setOperate({ unlocked: false, actingUser: null, actingRole: null, expiresAt: null });
-    if (!DEMO_MODE) setState(emptyState());
+    if (!DEMO_MODE) {
+      setState(emptyState());
+      // The next sign-in restores a fresh session behind the skeleton again.
+      setSessionHydrated(false);
+    }
   }, [clearSessionExpired]);
 
   // ── Setup wizard ─────────────────────────────────────────────────────────
@@ -2684,7 +2697,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<Store>(
     () => ({
-      session, state, operate, securityDbReady, sessionLoading, sessionExpired, clearSessionExpired, expireSession, billingEntitlements,
+      session, state, operate, securityDbReady, sessionLoading, sessionHydrated, sessionExpired, clearSessionExpired, expireSession, billingEntitlements,
       onboarding, refreshOnboarding, markMilestone, dismissOnboarding, stepUpPrompt, closeStepUpPrompt,
       register, githubAuthStart, githubAuthCallback, registerWithGithub, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession,
       acceptPrivacy, saveIdentity, updateOrgProfile, sendOtp, verifyOtp, startDomainVerification, checkDomain, submitCac, skipCac, requestManualReview, completeSetup, refreshSetup,
@@ -2697,7 +2710,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       toggleTool, createTicket, decidePending, refreshPending, refreshAudit, sendTestAlert, updateAlertSettings, exportAuditCsv, resetDemo,
       toasts, toast, dismissToast,
     }),
-    [session, state, operate, securityDbReady, sessionExpired, clearSessionExpired, expireSession, toasts, dualControlPrompt,
+    [session, state, operate, securityDbReady, sessionLoading, sessionHydrated, sessionExpired, clearSessionExpired, expireSession, toasts, dualControlPrompt,
       onboarding, refreshOnboarding, markMilestone, dismissOnboarding, stepUpPrompt, closeStepUpPrompt,
       register, githubAuthStart, githubAuthCallback, registerWithGithub, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession, acceptPrivacy, saveIdentity, updateOrgProfile, sendOtp, verifyOtp,
       startDomainVerification, checkDomain, submitCac, skipCac, requestManualReview, completeSetup, refreshSetup,
