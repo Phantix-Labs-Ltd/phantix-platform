@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { errorCode } from "@/lib/api";
+import { nextAfterQuickScan, nextStepLabel } from "@/lib/firstRun";
 import { APP_URL } from "@/lib/links";
 import { cx } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -35,6 +36,8 @@ const POLL_MS = 2000;
  */
 export default function GetStarted() {
   const { state, session, securityDbReady, markMilestone, refreshOnboarding } = useStore();
+  // After the scan: audit control (dual control on) → service key → security database.
+  const nextStep = nextAfterQuickScan(state);
   const navigate = useNavigate();
 
   const emailDomain = (session?.email || state.org.email || "").split("@")[1]?.toLowerCase() || "";
@@ -114,7 +117,7 @@ export default function GetStarted() {
       void refreshOnboarding();
     } catch (err) {
       const code = errorCode(err);
-      if (code === "security_db_missing") navigate("/connections?from=quick-scan");
+      if (code === "security_db_missing") navigate(nextStep);
       else if (code === "already_imported") { setImported(true); void refreshOnboarding(); }
       else if (code === "quick_scan_expired") setError("This preview expired. Scan again to get fresh results.");
       else if (await importFinishedAnyway(scan.id)) { setImported(true); void refreshOnboarding(); }
@@ -283,7 +286,7 @@ export default function GetStarted() {
                           {busy ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />} Save results
                         </button>
                       ) : (
-                        <Link to="/connections?from=quick-scan" className="btn-primary"><Database size={15} /> Connect a database</Link>
+                        <Link to={nextStep} className="btn-primary"><Database size={15} /> {nextStepLabel(nextStep)}</Link>
                       )}
                     </div>
                   )}

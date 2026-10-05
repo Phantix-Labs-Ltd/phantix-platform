@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { SERVICE_KEY_STEP, needsAuditControl } from "@/lib/firstRun";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Users, UserPlus, ShieldCheck, Link2, KeyRound, ArrowRight, ArrowLeft,
@@ -121,6 +122,20 @@ export default function People() {
           </>
         }
       />
+
+      {/* First run: audit control comes before the service key and security database. */}
+      {searchParams.get("onboarding") === "1" && (
+        <div className="mb-5 flex flex-wrap items-center gap-3 rounded-md border border-gold-400/30 bg-gold-400/[0.06] px-4 py-3">
+          <p className="min-w-0 flex-1 text-sm text-slate-300">
+            {needsAuditControl(state)
+              ? "Set up audit control first: choose who starts sensitive actions and who approves them. Your service key is created next, then you connect your security database."
+              : "Audit control is set. Next, your service key is created and you connect your security database."}
+          </p>
+          {!needsAuditControl(state) && (
+            <Link to={SERVICE_KEY_STEP} className="btn-primary shrink-0 !py-1.5 text-sm">Continue</Link>
+          )}
+        </div>
+      )}
 
       {!dc.configured ? (
         <BootstrapWizard />
@@ -582,6 +597,8 @@ function DeleteRoleDialog({
 // ── Bootstrap wizard (Phases 0---3 from DUAL_CONTROL_SETUP_FE.md) ──────────────
 function BootstrapWizard() {
   const { state, createUser, assignDualControl, toast } = useStore();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const users = state.users;
   const [phase, setPhase] = useState<"welcome" | "initiator" | "authorizer" | "review">("welcome");
   const [initiator, setInitiator] = useState<OrgUser | null>(users[0] ?? null);
@@ -729,6 +746,8 @@ function BootstrapWizard() {
                     try {
                       await assignDualControl(initiator.id, authorizer.id);
                       toast("success", "Audit control active", "The audit controller is recorded on every platform action.");
+                      // First run continues to the service key, then the security database.
+                      if (searchParams.get("onboarding") === "1") navigate(SERVICE_KEY_STEP);
                     } catch (err) {
                       setError(err instanceof Error ? err.message : "Assignment failed");
                     } finally {

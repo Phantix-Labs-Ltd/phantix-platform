@@ -41,6 +41,7 @@ const Alerts = React.lazy(() => import("@/pages/Alerts"));
 const Integrations = React.lazy(() => import("@/pages/Integrations"));
 const Sandbox = React.lazy(() => import("@/pages/Sandbox"));
 const GetStarted = React.lazy(() => import("@/pages/setup/GetStarted"));
+const ServiceKeyStep = React.lazy(() => import("@/pages/setup/ServiceKeyStep"));
 const DangerZone = React.lazy(() => import("@/pages/DangerZone"));
 const Docs = React.lazy(() => import("@/pages/Docs"));
 const DocPage = React.lazy(() => import("@/pages/DocPage"));
@@ -138,6 +139,7 @@ export default function App() {
             <Route path="/reset-password" element={<PasswordResetComplete />} />
             <Route path="/setup" element={<SetupRoute />} />
             <Route path="/get-started" element={<RequireManagement><GetStarted /></RequireManagement>} />
+            <Route path="/get-started/service-key" element={<RequireManagement><ServiceKeyStep /></RequireManagement>} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<RequireManagement><Dashboard /></RequireManagement>} />
               <Route path="/sandbox" element={<RequireManagement><Sandbox /></RequireManagement>} />
