@@ -70,6 +70,14 @@ function RequireManagement({ children }: { children: React.ReactNode }) {
 }
 
 // Setup wizard requires auth; once complete there is nothing to resume
+/** The bare domain: signed-out visitors go to sign-in, signed-in ones to their app. */
+function RootRedirect() {
+  const { session, state, sessionLoading, sessionHydrated } = useStore();
+  if (sessionLoading && !sessionHydrated) return <ShellSkeleton />;
+  if (!session?.authenticated) return <Navigate to="/login" replace />;
+  return <Navigate to={state.setup.setup_complete ? "/dashboard" : "/setup"} replace />;
+}
+
 function SetupRoute() {
   const { session, state, sessionLoading, sessionHydrated, onboarding } = useStore();
   // First restore only: unmounting the wizard on a later refresh reset the OTP
@@ -116,6 +124,7 @@ export default function App() {
         <Seo />
         <React.Suspense fallback={<ShellSkeleton />}>
           <Routes>
+            <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<Login />} />
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/device-confirm" element={<DeviceConfirm />} />
