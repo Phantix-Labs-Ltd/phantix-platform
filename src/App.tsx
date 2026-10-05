@@ -48,13 +48,15 @@ const NotFound = React.lazy(() => import("@/pages/NotFound"));
 
 // Authenticated + setup-complete gate for management routes
 function RequireManagement({ children }: { children: React.ReactNode }) {
-  const { session, state, sessionLoading, sessionExpired } = useStore();
+  const { session, state, sessionLoading, sessionHydrated, sessionExpired } = useStore();
   const location = useLocation();
   // Verify the session before rendering OR redirecting — no flash of the app
   // or of the login page while the stored session is still being restored.
   // The page is drawn as its skeleton meanwhile, never a full-screen loader.
   // A restored session already renders the real chrome, so only the page is drawn.
-  if (sessionLoading) return session?.authenticated ? <RouteSkeleton /> : <ShellSkeleton />;
+  // Only the first restore shows it: a later refresh keeps the page mounted, or
+  // a page that refreshes on mount (Identity) would loop through the skeleton.
+  if (sessionLoading && !sessionHydrated) return session?.authenticated ? <RouteSkeleton /> : <ShellSkeleton />;
   if (!session?.authenticated) {
     // A dropped app session shows the SessionExpiredOverlay in place instead of
     // an abrupt redirect — keep the current page mounted underneath it.
@@ -69,8 +71,10 @@ function RequireManagement({ children }: { children: React.ReactNode }) {
 
 // Setup wizard requires auth; once complete there is nothing to resume
 function SetupRoute() {
-  const { session, state, sessionLoading, onboarding } = useStore();
-  if (sessionLoading) {
+  const { session, state, sessionLoading, sessionHydrated, onboarding } = useStore();
+  // First restore only: unmounting the wizard on a later refresh reset the OTP
+  // step and re-ran the wizard's own refresh, so it reloaded in a loop.
+  if (sessionLoading && !sessionHydrated) {
     return (
       <div className="px-4 py-10 sm:px-8">
         <RouteSkeleton />

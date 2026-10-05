@@ -60,11 +60,15 @@ export default function SetupWizard() {
     })();
   }, [s.privacy_notice_version]);
 
+  // Refresh once per visit. Re-running on every email change re-fetched the
+  // whole session each time hydration itself filled the email in.
+  const hydratedOnMount = useRef(false);
   useEffect(() => {
-    if (!DEMO_MODE) {
-      void hydrateSession(session?.email || state.org.email || state.org.primary_email || "");
-    }
-  }, [hydrateSession, session?.email, state.org.email, state.org.primary_email]);
+    if (DEMO_MODE || hydratedOnMount.current) return;
+    hydratedOnMount.current = true;
+    void hydrateSession(session?.email || state.org.email || state.org.primary_email || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Poll setup while on the wizard (picks up an email verified in another tab)
   useEffect(() => {
