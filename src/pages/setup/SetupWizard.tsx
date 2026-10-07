@@ -210,6 +210,21 @@ function PrivacyStep({ privacyNotice }: { privacyNotice: Record<string, unknown>
   const boxRef = useRef<HTMLDivElement>(null);
   const [scrolled, setScrolled] = useState(false);
 
+  // A notice short enough to fit never fires a scroll event, which left the
+  // acceptance locked with nothing to scroll. Unlock it when the whole notice
+  // is already visible (re-checked when the notice loads or the box resizes).
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const check = () => {
+      if (el.scrollHeight <= el.clientHeight + 24) setScrolled(true);
+    };
+    check();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, [privacyNotice]);
+
   const pn = privacyNotice as Record<string, unknown> | null;
 
   if (state.setup.privacy_accepted) return null;

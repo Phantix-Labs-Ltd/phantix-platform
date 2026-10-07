@@ -651,7 +651,7 @@ function TestAccountModal({
   return (
     <Modal open={open} onClose={onClose} title={editing ? `Edit test account: ${editing.label}` : "Add test account"} wide>
       <div className="space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wider text-slate-500">Label *</label>
             <input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="staging-mobile-qa" className={field} />
@@ -666,7 +666,7 @@ function TestAccountModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wider text-slate-500">Kind</label>
             <select value={form.account_kind} onChange={(e) => setForm({ ...form, account_kind: e.target.value as any })} className="input !py-2 !text-xs">
@@ -693,7 +693,7 @@ function TestAccountModal({
           <input value={form.register_url} onChange={(e) => setForm({ ...form, register_url: e.target.value })} placeholder="https://api-staging.example.com/signup" className={field} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="mb-1 block text-[12px] font-semibold uppercase tracking-wider text-slate-500">Username</label>
             <input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="qa_user" className={field} />

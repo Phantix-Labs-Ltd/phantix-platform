@@ -98,7 +98,7 @@ export default function ProfileCompletionNotice({ className }: { className?: str
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gold-400/15 text-gold-400">
             <AlertTriangle size={18} />
           </span>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[12rem] flex-1">
             <p className="font-semibold text-slate-100">Company profile {pct}% complete</p>
             <p className="text-sm text-slate-400">
               {missing.length} item{missing.length === 1 ? "" : "s"} still needed. Verification and branding unlock

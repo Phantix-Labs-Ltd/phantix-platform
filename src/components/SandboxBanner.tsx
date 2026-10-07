@@ -33,8 +33,10 @@ export default function SandboxBanner() {
         breaking ? "border-severity-critical/40 bg-severity-critical/10" : "border-amber-400/30 bg-amber-400/8",
       )}
     >
-      <FlaskConical size={16} className={breaking ? "text-severity-critical" : "text-amber-300"} />
-      <div className="min-w-0 flex-1">
+      <FlaskConical size={16} className={cx("shrink-0", breaking ? "text-severity-critical" : "text-amber-300")} />
+      {/* A floor on the text width makes the actions wrap to their own row on
+          phones instead of crushing the text into a one-word column. */}
+      <div className="min-w-[12rem] flex-1">
         <p className="text-xs font-semibold text-slate-100">
           BETA sandbox{me.program?.name ? ` · ${me.program.name}` : ""}
           {unread > 0 && (
@@ -53,16 +55,18 @@ export default function SandboxBanner() {
           </p>
         )}
       </div>
-      <Link to="/sandbox" className="btn-secondary !py-1.5 !text-xs">
-        Platform sandbox
-      </Link>
-      <a href={`${APP_URL}/sandbox`} className="btn-ghost !py-1.5 !text-xs text-gold-300" target="_blank" rel="noreferrer">
-        App sandbox
-      </a>
+      <div className="order-last flex w-full items-center gap-2 sm:order-none sm:w-auto">
+        <Link to="/sandbox" className="btn-secondary !py-1.5 !text-xs">
+          Platform sandbox
+        </Link>
+        <a href={`${APP_URL}/sandbox`} className="btn-ghost !py-1.5 !text-xs text-gold-300" target="_blank" rel="noreferrer">
+          App sandbox
+        </a>
+      </div>
       <button
         type="button"
         aria-label="Dismiss"
-        className="rounded-lg p-1.5 text-slate-500 hover:bg-phantix-800/60 hover:text-slate-300"
+        className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-phantix-800/60 hover:text-slate-300"
         onClick={() => {
           sessionStorage.setItem("platform_sandbox_banner_dismissed", "1");
           setDismissed(true);

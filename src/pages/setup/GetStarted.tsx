@@ -154,13 +154,16 @@ export default function GetStarted() {
     <div className="relative min-h-screen">
       <div className="pointer-events-none absolute inset-0 bg-grid-faint bg-grid [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
       <header className="relative flex items-center justify-between px-4 py-5 sm:px-8">
-        <div className="flex items-center gap-3">
-          <BrandLogo className="h-9 w-9" />
-          <span className="font-display text-[15px] font-bold text-white">{state.org.name || "SecureGraph"}</span>
+        <div className="flex min-w-0 items-center gap-3">
+          <BrandLogo className="h-9 w-9 shrink-0" />
+          <span className="truncate font-display text-[15px] font-bold text-white">{state.org.name || "SecureGraph"}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <ThemeToggle />
-          <Link to="/dashboard" className="btn-ghost text-sm">Skip to dashboard <ArrowRight size={14} /></Link>
+          <Link to="/dashboard" className="btn-ghost text-sm">
+            <span className="sm:hidden">Skip</span>
+            <span className="hidden sm:inline">Skip to dashboard</span> <ArrowRight size={14} />
+          </Link>
         </div>
       </header>
 
@@ -272,7 +275,7 @@ export default function GetStarted() {
                     </div>
                   ) : (
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-[12rem] flex-1">
                         <p className="font-medium text-white">Keep these results</p>
                         <p className="mt-1 text-sm text-slate-400">
                           {securityDbReady
@@ -333,7 +336,7 @@ function Results({ scan }: { scan: QuickScan }) {
             <li key={f.id ?? i} className="px-6 py-4">
               <div className="flex flex-wrap items-start gap-3">
                 <span className={cx("mt-0.5 shrink-0 rounded border px-2 py-0.5 text-[11px] font-semibold uppercase", SEVERITY_TEXT[f.severity])}>{f.severity}</span>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-[12rem] flex-1">
                   <p className="font-medium text-white">{f.title}</p>
                   {f.asset && <p className="mt-0.5 break-all font-mono text-xs text-slate-500">{f.asset}</p>}
                   {f.detail && <p className="mt-1.5 text-sm text-slate-400">{f.detail}</p>}

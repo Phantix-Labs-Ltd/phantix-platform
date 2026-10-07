@@ -158,7 +158,7 @@ export default function DangerZone() {
                       className="flex flex-wrap items-center gap-3 rounded-md border border-severity-critical/20 bg-severity-critical/[0.04] px-4 py-3"
                     >
                       <Building2 size={14} className="text-slate-500" />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-[12rem] flex-1">
                         <p className="text-sm font-medium text-slate-200">{c.name}</p>
                         <p className="font-mono text-[13px] text-slate-500">#{c.id} · {c.slug}</p>
                       </div>
@@ -202,7 +202,7 @@ export default function DangerZone() {
                         className="flex flex-wrap items-center gap-3 rounded-md border border-severity-critical/20 bg-severity-critical/[0.04] px-4 py-3"
                       >
                         <Users size={14} className="text-slate-500" />
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-[12rem] flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="text-sm font-medium text-slate-200">{u.full_name}</p>
                             {dc.initiator_user_id === u.id && (
@@ -268,11 +268,12 @@ function DangerRow({
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-severity-critical/10 text-severity-critical">
         {icon}
       </span>
-      <div className="min-w-0 flex-1">
+      {/* Text keeps a readable width; on phones the action wraps below it. */}
+      <div className="min-w-[14rem] flex-1">
         <p className="text-sm font-semibold text-slate-100">{title}</p>
         <p className={cx("mt-1 text-xs leading-5 text-slate-400")}>{body}</p>
       </div>
-      <div className="flex shrink-0 items-center">{children}</div>
+      <div className="flex w-full shrink-0 items-center sm:w-auto [&>*]:w-full [&>*]:justify-center sm:[&>*]:w-auto">{children}</div>
     </div>
   );
 }

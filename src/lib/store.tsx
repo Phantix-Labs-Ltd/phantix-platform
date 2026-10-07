@@ -2743,7 +2743,8 @@ const icons: Record<ToastKind, React.ReactNode> = {
 export function ToastViewport() {
   const { toasts, dismissToast } = useStore();
   return (
-    <div className="fixed bottom-5 right-5 z-[100] flex w-[360px] flex-col gap-2">
+    // Phones: full width, just above the bottom tab bar. Wider: bottom-right corner.
+    <div className="fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[100] flex flex-col gap-2 md:inset-x-auto md:bottom-5 md:right-5 md:w-[360px]">
       <AnimatePresence>
         {toasts.map((t) => (
           <motion.div

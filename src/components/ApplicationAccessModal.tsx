@@ -122,7 +122,7 @@ export default function ApplicationAccessModal({
                 className="rounded-lg border border-phantix-700/40 bg-phantix-900/40 p-3.5"
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-[12rem] flex-1">
                     <p className="text-sm font-semibold text-slate-100">{app.label}</p>
                     <p className="text-[13px] text-slate-500">{app.tagline}</p>
                   </div>

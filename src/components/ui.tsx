@@ -210,13 +210,15 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   return (
     <AnimatePresence>
       {open && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] flex items-center justify-center bg-phantix-950/80 backdrop-blur-sm p-4" onClick={onClose}>
+        // Phones: a bottom sheet (in reach of the thumb, clear of the home
+        // indicator). Wider screens: the centred dialog.
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[90] flex items-end justify-center bg-phantix-950/80 backdrop-blur-sm sm:items-center sm:p-4" onClick={onClose}>
           <motion.div
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 16, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 320, damping: 28 }}
-            className={cx("glass-bright w-full rounded-2xl shadow-card", wide ? "max-w-3xl" : "max-w-lg")}
+            className={cx("glass-bright w-full rounded-t-2xl shadow-card sm:rounded-2xl", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -224,13 +226,13 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
             ref={dialogRef}
             tabIndex={-1}
           >
-            <div className="flex items-center justify-between border-b border-phantix-700/40 px-6 py-4">
-              <h3 id={titleId} className="font-display text-base font-semibold text-white">{title}</h3>
-              <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-phantix-700/50 hover:text-white">
+            <div className="flex items-center justify-between gap-3 border-b border-phantix-700/40 px-4 py-3 sm:px-6 sm:py-4">
+              <h3 id={titleId} className="min-w-0 font-display text-base font-semibold text-white">{title}</h3>
+              <button onClick={onClose} aria-label="Close" className="shrink-0 rounded-lg p-2.5 text-slate-400 hover:bg-phantix-700/50 hover:text-white sm:p-1.5">
                 <X size={16} />
               </button>
             </div>
-            <div className="max-h-[72vh] overflow-y-auto px-6 py-5">{children}</div>
+            <div className="max-h-[80dvh] overflow-y-auto px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 sm:max-h-[72vh] sm:px-6 sm:pb-5">{children}</div>
           </motion.div>
         </motion.div>
       )}
@@ -364,7 +366,7 @@ export function SkeletonBlock({ className }: { className?: string }) {
 export function PageHeaderSkeleton({ actions = false }: { actions?: boolean }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div className="min-w-0 flex-1">
+      <div className="min-w-[12rem] flex-1">
         <div className="skeleton mb-2 h-5 w-48 max-w-full rounded" />
         <div className="skeleton h-8 w-72 max-w-full rounded" />
         <div className="skeleton mt-3 h-3 w-96 max-w-full rounded" />

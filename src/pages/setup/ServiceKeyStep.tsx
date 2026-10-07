@@ -65,9 +65,9 @@ export default function ServiceKeyStep() {
     <div className="relative min-h-screen">
       <div className="pointer-events-none absolute inset-0 bg-grid-faint bg-grid [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
       <header className="relative flex items-center justify-between px-4 py-5 sm:px-8">
-        <div className="flex items-center gap-3">
-          <BrandLogo className="h-9 w-9" />
-          <span className="font-display text-[15px] font-bold text-white">{state.org.name || "SecureGraph"}</span>
+        <div className="flex min-w-0 items-center gap-3">
+          <BrandLogo className="h-9 w-9 shrink-0" />
+          <span className="truncate font-display text-[15px] font-bold text-white">{state.org.name || "SecureGraph"}</span>
         </div>
         <ThemeToggle />
       </header>
