@@ -130,15 +130,15 @@ export default function Alerts() {
             {/* Integrations Hub link */}
             <div className="lg:col-span-2">
               <Card pad="sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Cable size={16} className="text-gold-400" />
-                    <div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex min-w-[14rem] flex-1 items-center gap-3">
+                    <Cable size={16} className="shrink-0 text-gold-400" />
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-slate-200">Connected channels</p>
                       <p className="text-xs text-slate-400">Manage Slack, Teams, SSO, SCIM, and webhook integrations from the Integrations Hub</p>
                     </div>
                   </div>
-                  <Link to="/integrations" className="btn-secondary !px-3 !py-1.5">
+                  <Link to="/integrations" className="btn-secondary w-full justify-center !px-3 !py-1.5 sm:w-auto">
                     <Cable size={12} /> Open Integrations Hub
                   </Link>
                 </div>
@@ -385,7 +385,7 @@ function SMTPForm({
       <div className="rounded-md border border-phantix-600/30 bg-phantix-800/30 p-3 text-xs text-slate-400">
         Configure your organization's outbound SMTP relay for alert delivery. Credentials are encrypted at rest.
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="label">SMTP Host</label>
           <input className="input font-mono text-sm" value={host} onChange={(e) => setHost(e.target.value)} placeholder="smtp-relay.brevo.com" />
@@ -395,7 +395,7 @@ function SMTPForm({
           <input className="input font-mono text-sm" type="number" value={port} onChange={(e) => setPort(Number(e.target.value))} />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="label">SMTP Username</label>
           <input className="input font-mono text-sm" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="user@smtp-provider.com" />
@@ -406,7 +406,7 @@ function SMTPForm({
           <p className="text-[12px] text-slate-500 mt-1">Password is encrypted at rest. Leave empty to keep current password unchanged.</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <label className="label">From Name</label>
           <input className="input text-sm" value={fromName} onChange={(e) => setFromName(e.target.value)} placeholder="SecureGraph Application" />

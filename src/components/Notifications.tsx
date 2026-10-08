@@ -421,7 +421,9 @@ export function NotificationBell() {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 6 }}
-              className="absolute right-0 top-full z-[85] mt-2 w-[22rem] max-w-[calc(100vw-24px)] overflow-hidden rounded-xl border border-phantix-700/50 bg-phantix-900 shadow-card"
+              // Phones: pinned under the header across the screen (anchored to the
+              // bell it ran off the left edge). Wider screens: drops from the bell.
+              className="fixed inset-x-3 top-16 z-[85] overflow-hidden rounded-xl border border-phantix-700/50 bg-phantix-900 shadow-card sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[22rem] sm:max-w-[calc(100vw-24px)]"
               role="dialog"
               aria-label="Notifications"
             >

@@ -224,7 +224,7 @@ export default function CompanyVerification() {
                   <p className="text-sm text-slate-400">CAC step skipped.</p>
                 ) : (
                   <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div>
                         <label className="label">RC number</label>
                         <input className="input font-mono" value={rc} onChange={(e) => setRc(e.target.value)} placeholder="RC1234567" />
@@ -241,7 +241,7 @@ export default function CompanyVerification() {
                         <label className="label">Status</label>
                         <input className="input" value={cacStatus} onChange={(e) => setCacStatus(e.target.value)} />
                       </div>
-                      <div className="col-span-2">
+                      <div className="sm:col-span-2">
                         <label className="label">Registered address</label>
                         <input className="input" value={cacAddress} onChange={(e) => setCacAddress(e.target.value)} />
                       </div>

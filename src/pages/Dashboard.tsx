@@ -70,17 +70,17 @@ export default function Dashboard() {
       {!securityDbReady && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mb-5">
           <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-severity-medium/30 bg-severity-medium/8 px-5 py-4">
-            <span className="flex h-11 w-11 items-center justify-center rounded-md bg-severity-medium/15 text-severity-medium">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-severity-medium/15 text-severity-medium">
               <AlertTriangle size={19} />
             </span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-[14rem] flex-1">
               <p className="font-semibold text-slate-100">Security database not ready</p>
               <p className="text-sm text-slate-400">
                 Scans, VAPT and findings are blocked until a <span className="font-mono text-xs">security_data_storage</span> connection
                 is bootstrapped. This gate is enforced by the platform, not just the UI.
               </p>
             </div>
-            <Link to="/connections" className="btn-primary">Connect security DB <ArrowRight size={15} /></Link>
+            <Link to="/connections" className="btn-primary w-full justify-center sm:w-auto">Connect security DB <ArrowRight size={15} /></Link>
           </div>
         </motion.div>
       )}
@@ -221,7 +221,7 @@ export default function Dashboard() {
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-400/15 text-gold-400">
                 <Rocket size={17} />
               </span>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-[14rem] flex-1">
                 <p className="text-sm leading-6 text-slate-300">
                   {securityDbReady
                     ? "Your security database is ready --- the Command Centre is unblocked."
@@ -232,7 +232,7 @@ export default function Dashboard() {
                   <span className="text-xs text-slate-500">{securityDbReady ? "bootstrap gate passed" : "bootstrap gate"}</span>
                 </div>
               </div>
-              <a href={`${APP_URL}/dashboard`} target="_blank" rel="noreferrer" className="btn-primary">
+              <a href={`${APP_URL}/dashboard`} target="_blank" rel="noreferrer" className="btn-primary w-full justify-center sm:w-auto">
                 Launch Command Centre <ArrowRight size={15} />
               </a>
             </div>

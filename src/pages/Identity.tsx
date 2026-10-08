@@ -381,12 +381,12 @@ export default function Identity() {
                 return (
                   <div key={which} className="rounded-md border border-phantix-700/40 bg-phantix-950/40 p-4">
                     <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">{which === "primary_contact" ? "Primary" : "Secondary"}</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <select className="input" value={c.title ?? "mr"} onChange={(e) => setContact(which, "title", e.target.value)}>
                         {contactTitles.map((t) => <option key={t} value={t}>{humanize(t)}</option>)}
                       </select>
                       <input className="input" placeholder="Full name" value={c.name ?? ""} onChange={(e) => setContact(which, "name", e.target.value)} />
-                      <input className="input col-span-2" placeholder="email" value={c.email ?? ""} onChange={(e) => setContact(which, "email", e.target.value)} />
+                      <input className="input sm:col-span-2" placeholder="email" value={c.email ?? ""} onChange={(e) => setContact(which, "email", e.target.value)} />
                       <input className="input" placeholder="phone" value={c.phone ?? ""} onChange={(e) => setContact(which, "phone", e.target.value)} />
                       <input className="input" placeholder="whatsapp" value={c.whatsapp_username ?? ""} onChange={(e) => setContact(which, "whatsapp_username", e.target.value)} />
                       <input className="input col-span-2" placeholder="telegram" value={c.telegram_username ?? ""} onChange={(e) => setContact(which, "telegram_username", e.target.value)} />

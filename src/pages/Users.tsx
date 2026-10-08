@@ -143,15 +143,15 @@ export default function People() {
         <>
           {!state.serviceKey && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
-              <div className="flex items-start gap-3 rounded-2xl border border-severity-medium/30 bg-severity-medium/8 px-5 py-4">
+              <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-severity-medium/30 bg-severity-medium/8 px-5 py-4">
                 <AlertTriangle size={18} className="mt-0.5 shrink-0 text-severity-medium" />
-                <div className="min-w-0 flex-1">
+                <div className="min-w-[12rem] flex-1">
                   <p className="font-semibold text-slate-100">Service key required for app access</p>
                   <p className="text-sm text-slate-400">
-                    Login links will not work until you create a service key. Go to Identity and Keys, or click here to create one now.
+                    Login links will not work until you create a service key. Create it now; it is shown once.
                   </p>
                 </div>
-                <a href="/identity" className="btn-primary shrink-0">Create service key <ArrowRight size={15} /></a>
+                <Link to={SERVICE_KEY_STEP} className="btn-primary w-full justify-center sm:w-auto">Create service key <ArrowRight size={15} /></Link>
               </div>
             </motion.div>
           )}
@@ -274,11 +274,11 @@ export default function People() {
             >
 
               {/* Authorizer --- exactly one */}
-              <div className="flex items-center gap-4 rounded-2xl border border-gold-400/30 bg-gold-400/5 p-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-md border border-gold-400/40 bg-phantix-850 text-gold-300 font-display text-base font-bold">
+              <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-gold-400/30 bg-gold-400/5 p-4">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-gold-400/40 bg-phantix-850 text-gold-300 font-display text-base font-bold">
                   {authorizer?.full_name.slice(0, 1) ?? "?"}
                 </span>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-[12rem] flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-slate-100">{authorizer?.full_name ?? "Not set"}</p>
                     <span className="chip border-gold-400/30 bg-gold-400/10 text-gold-300">Authorizer · sole approver</span>
@@ -631,11 +631,11 @@ function BootstrapWizard() {
         <AnimatePresence mode="wait">
           {phase === "welcome" && (
             <motion.div key="welcome" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <div className="flex items-start gap-5">
-                <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gold-400/15 text-gold-400">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gold-400/15 text-gold-400 sm:h-16 sm:w-16">
                   <ShieldCheck size={28} />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h2 className="font-display text-xl font-bold text-white">Set up dual control</h2>
                   <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
                     SecureGraph protects every mutation with <strong className="text-slate-200">dual control</strong>:
@@ -645,7 +645,7 @@ function BootstrapWizard() {
                     <strong className="text-slate-200">add more initiators anytime</strong> afterwards. Bootstrap uses
                     your company account; after assignment, mutations need a live operate session.
                   </p>
-                  <div className="mt-4 grid max-w-xl grid-cols-2 gap-3">
+                  <div className="mt-4 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="rounded-md border border-phantix-700/40 bg-phantix-950/50 p-3.5">
                       <p className="text-xs font-semibold text-gold-300">Initiators <span className="font-normal text-slate-500">· one or more</span></p>
                       <p className="mt-1 text-[13px] leading-4 text-slate-500">Propose and execute, for example IT Admin. Add as many as you need.</p>
@@ -655,7 +655,7 @@ function BootstrapWizard() {
                       <p className="mt-1 text-[13px] leading-4 text-slate-500">Sole approver of pending actions, for example the CISO.</p>
                     </div>
                   </div>
-                  <button onClick={() => setPhase("initiator")} className="btn-primary mt-5">
+                  <button onClick={() => setPhase("initiator")} className="btn-primary mt-5 w-full justify-center sm:w-auto">
                     Create the first initiator <ArrowRight size={15} />
                   </button>
                 </div>
@@ -1268,7 +1268,7 @@ function AddUserModal({
             role --- the authorizer is a single designated slot, changed from the Audit control card.
           </div>
         )}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label className="label">Full name</label>
             <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />

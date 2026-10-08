@@ -18,6 +18,8 @@ import SandboxBanner from "@/components/SandboxBanner";
 import { loadSandboxMe } from "@/lib/sandbox";
 import { RouteSkeleton } from "@/components/RouteSkeleton";
 import { BrandMark, BrandWordmark } from "@/components/BrandLogo";
+import { MobileTabBar, MoreSheet, usePageTitle } from "@/components/MobileAppShell";
+import { useTableCards } from "@/lib/useTableCards";
 
 type NavLeafItem = { to: string; label: string; icon: React.ReactNode };
 type NavDropdownItem = {
@@ -167,6 +169,13 @@ export default function Layout() {
   const collapsed = collapsedPref && !mobileNav;
   const location = useLocation();
   const navigate = useNavigate();
+  // Phones: bottom tab bar + "More" sheet instead of the sidebar drawer.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const closeMore = React.useCallback(() => setMoreOpen(false), []);
+  const pageTitle = usePageTitle();
+  // Phones: data tables render as lists (labels copied from the column headers).
+  const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
+  useTableCards(mainEl);
 
   useEffect(() => {
     setMobileNav(false);
@@ -250,7 +259,7 @@ export default function Layout() {
     <div className="flex min-h-screen">
       {mobileNav && (
         <div
-          className="fixed inset-0 z-40 bg-phantix-950/70 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileNav(false)}
           aria-hidden="true"
         />
@@ -260,7 +269,9 @@ export default function Layout() {
         id="platform-sidebar"
         data-collapsed={collapsed ? "" : undefined}
         className={cx(
-          "sg-sidebar fixed inset-y-0 left-0 z-50 flex flex-col border-r border-phantix-700/40 bg-[rgb(var(--surface-sidebar))] transition-transform duration-200 lg:z-40 lg:translate-x-0",
+          // Below lg the sidebar is a drawer over the page: an opaque, raised
+          // surface (the black desktop rail colour blended into the page).
+          "sg-sidebar fixed inset-y-0 left-0 z-50 flex flex-col border-r border-phantix-700/40 bg-[rgb(var(--surface-sidebar))] transition-transform duration-200 max-lg:border-phantix-600/60 max-lg:bg-[rgb(var(--surface-card))] lg:z-40 lg:translate-x-0",
           mobileNav ? "translate-x-0 shadow-2xl" : "-translate-x-full",
           collapsed ? "w-[72px]" : "w-[248px]",
         )}
@@ -351,13 +362,14 @@ export default function Layout() {
 
       {/* ── Main ────────────────────────────────────────────── */}
       <div className={cx("flex min-h-screen min-w-0 flex-1 flex-col", collapsedPref ? "lg:ml-[72px]" : "lg:ml-[248px]")}>
-        <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-phantix-700/40 bg-phantix-950/80 px-4 py-3 backdrop-blur-xl sm:gap-3 sm:px-6">
+        <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-phantix-700/40 bg-phantix-950/80 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl sm:gap-3 sm:px-6">
+          {/* Phones navigate with the bottom tab bar; the drawer stays for mid-size screens. */}
           <button
             onClick={() => setMobileNav(true)}
             aria-label="Open navigation"
             aria-controls="platform-sidebar"
             aria-expanded={mobileNav}
-            className="shrink-0 rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white lg:hidden"
+            className="hidden shrink-0 rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white md:inline-flex lg:hidden"
           >
             <Menu size={18} />
           </button>
@@ -380,7 +392,10 @@ export default function Layout() {
               <span className="skeleton h-4 w-40 rounded" aria-hidden="true" />
             ) : (
               <>
-                <span className="truncate font-display text-sm font-semibold text-slate-200">{state.org.name}</span>
+                {/* Phones: app bar with the brand mark and the page title. */}
+                <BrandMark className="h-7 w-7 shrink-0 md:hidden" />
+                <span className="truncate font-display text-[17px] font-bold text-white md:hidden">{pageTitle}</span>
+                <span className="hidden truncate font-display text-sm font-semibold text-slate-200 md:inline">{state.org.name}</span>
                 {state.org.slug ? (
                   <span className="chip hidden shrink-0 border-phantix-600/50 bg-phantix-800/60 font-mono text-slate-400 xl:inline-flex">{state.org.slug}</span>
                 ) : null}
@@ -395,7 +410,7 @@ export default function Layout() {
                 title="BETA sandbox"
                 className={({ isActive }) =>
                   cx(
-                    "relative rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white",
+                    "relative hidden rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white md:block",
                     isActive && "border-gold-400/50 text-gold-300",
                   )
                 }
@@ -407,7 +422,10 @@ export default function Layout() {
               </NavLink>
             )}
             <NotificationBell />
-            <ThemeToggle />
+            {/* Phones choose the theme in the More sheet. */}
+            <span className="hidden md:contents">
+              <ThemeToggle />
+            </span>
             {sessionLoading ? (
               <span className="skeleton hidden h-7 w-40 rounded-md md:block" aria-hidden="true" />
             ) : securityDbReady ? (
@@ -430,7 +448,11 @@ export default function Layout() {
 
             <div className="relative">
               <button
-                onClick={() => setUserMenu((v) => !v)}
+                onClick={() => {
+                  // Phones: the account lives in the More sheet.
+                  if (window.matchMedia("(max-width: 767px)").matches) setMoreOpen(true);
+                  else setUserMenu((v) => !v);
+                }}
                 aria-haspopup="menu"
                 aria-expanded={userMenu}
                 aria-label="Account menu"
@@ -443,7 +465,7 @@ export default function Layout() {
                   <span className="block text-xs font-semibold leading-tight text-slate-200">Company account</span>
                   <span className="block max-w-[150px] truncate text-[12px] leading-tight text-slate-500">{session?.email}</span>
                 </span>
-                <ChevronDown size={14} className="text-slate-500" />
+                <ChevronDown size={14} className="hidden text-slate-500 md:block" />
               </button>
               <AnimatePresence>
                 {userMenu && (
@@ -483,7 +505,8 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        {/* Bottom padding keeps content clear of the phone tab bar. */}
+        <main ref={setMainEl} className="min-w-0 flex-1 px-4 pb-[calc(88px+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:py-6 lg:px-8">
           {/* The one content measure for this app: pages fill it, and 1600px
               stops an ultrawide display stretching a table across the glass. */}
           <div className="mx-auto w-full min-w-0 max-w-[1600px]">
@@ -495,11 +518,15 @@ export default function Layout() {
           </div>
         </main>
 
-        <footer className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-phantix-700/30 px-4 py-4 text-[13px] text-slate-600 sm:px-8">
+        <footer className="hidden flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-phantix-700/30 px-4 py-4 text-[13px] text-slate-600 sm:px-8 md:flex">
           <span>SecureGraph Platform · organization management --- keys and people live here; product operations live in the Command Centre</span>
           <span className="font-mono">Tenant #{state.org.id}</span>
         </footer>
       </div>
+
+      {/* Phone shell */}
+      <MobileTabBar moreOpen={moreOpen} onMore={() => setMoreOpen((v) => !v)} />
+      <MoreSheet open={moreOpen} onClose={closeMore} sandbox={sandboxEnrolled} />
     </div>
   );
 }

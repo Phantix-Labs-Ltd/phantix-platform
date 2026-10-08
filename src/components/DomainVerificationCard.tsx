@@ -88,7 +88,7 @@ export default function DomainVerificationCard() {
       {verified ? (
         <div className="flex flex-wrap items-center gap-3 rounded-md border border-emerald-400/30 bg-emerald-400/8 px-4 py-3">
           <CheckCircle2 size={17} className="shrink-0 text-emerald-400" />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[12rem] flex-1">
             <p className="text-sm font-medium text-emerald-300">
               {s.domain || state.org.website || "Company domain"} verified
             </p>

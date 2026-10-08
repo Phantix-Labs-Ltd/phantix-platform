@@ -349,12 +349,13 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
           }
         }}
       >
-        <div className="grid grid-cols-2 gap-3">
-          <div className="col-span-2">
+        {/* One column on phones (two cramped host/database values); two from sm up. */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2">
             <label className="label">Name</label>
             <input name="name" className="input" defaultValue="SecureGraph Store" required />
           </div>
-          <div className="col-span-2 grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-2">
             {([
               ["security_data_storage", "Security data storage", "SecureGraph writes findings, assets and evidence to its own dedicated schema"],
               ["config_inspection", "Config inspection", "Read-only security posture, never business rows"],

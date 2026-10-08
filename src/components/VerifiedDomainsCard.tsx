@@ -184,7 +184,7 @@ export default function VerifiedDomainsCard({ prefill }: { prefill?: string }) {
       )}
 
       <form onSubmit={add} className="mt-4 flex flex-wrap items-end gap-2">
-        <div className="min-w-0 flex-1">
+        <div className="min-w-[12rem] flex-1">
           <label className="label" htmlFor="vd-domain">{items.length ? "Add another domain" : "Add a domain"}</label>
           <input id="vd-domain" className={cx("input font-mono", prefill && value === prefill && "ring-1 ring-gold-400/50")} value={value}
             onChange={(e) => setValue(e.target.value)} placeholder="acme.com" autoComplete="off" spellCheck={false} />

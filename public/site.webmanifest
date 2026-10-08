@@ -1,6 +1,10 @@
 {
-  "name": "SecureGraph",
+  "id": "/",
+  "name": "SecureGraph Platform",
   "short_name": "SecureGraph",
+  "description": "Manage your organization, people, keys and security database.",
+  "start_url": "/",
+  "scope": "/",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -13,7 +17,7 @@
       "type": "image/png"
     }
   ],
-  "theme_color": "#1B2338",
-  "background_color": "#0A0A0A",
+  "theme_color": "#000000",
+  "background_color": "#000000",
   "display": "standalone"
 }

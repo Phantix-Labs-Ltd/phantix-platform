@@ -32,17 +32,17 @@ export default function Companies() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <Card hover className="mb-4 border-gold-400/25">
           <div className="flex flex-wrap items-center gap-4">
-            <span className="flex h-12 w-12 items-center justify-center rounded-md bg-gold-400/15 text-gold-400">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gold-400/15 text-gold-400">
               <Building2 size={20} />
             </span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+            <div className="min-w-[12rem] flex-1">
+              <div className="flex flex-wrap items-center gap-2">
                 <p className="font-semibold text-slate-100">{state.org.name}</p>
                 <span className="chip border-gold-400/30 bg-gold-400/10 text-gold-300">parent</span>
               </div>
-              <p className="mt-0.5 font-mono text-xs text-slate-500">#{state.org.id} · {state.org.slug}</p>
+              <p className="mt-0.5 break-all font-mono text-xs text-slate-500">#{state.org.id} · {state.org.slug}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full items-center gap-2 sm:w-auto">
               {state.serviceKey ? <CopyChip value={state.serviceKey.prefix} label="key" /> : <span className="text-xs text-slate-600">no key</span>}
               <StatusBadge status="active" />
             </div>
@@ -146,7 +146,7 @@ export default function Companies() {
             <label className="label">Company name</label>
             <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Company Ltd" required />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="label">Industry</label>
               <input className="input" value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="Fintech" />
