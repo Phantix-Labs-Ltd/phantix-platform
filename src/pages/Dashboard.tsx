@@ -11,7 +11,7 @@ import { Card, CardHeader, CollapsibleCard, CompletionDonut, AnimatedNumber, Sta
 import { useStore } from "@/lib/store";
 import { useSmartPoll } from "@/lib/usePolling";
 import { APP_URL } from "@/lib/links";
-import { MILESTONE_META } from "@/lib/onboarding";
+import { DOMAIN_ITEM, MILESTONE_META, hasVerifiedDomain } from "@/lib/onboarding";
 import { timeAgo, cx } from "@/lib/utils";
 
 export default function Dashboard() {
@@ -19,6 +19,8 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const dc = state.dualControl;
   const twoUsers = state.users.length >= 2;
+  const [domainVerified, setDomainVerified] = React.useState<boolean | null>(null);
+  React.useEffect(() => { void hasVerifiedDomain().then(setDomainVerified); }, []);
 
   // Smart polling: keep tenant overview fresh in the background (SWR-style).
   // Skip the first tick (hydrateSession runs on mount) and poll every 60s;
@@ -35,7 +37,12 @@ export default function Dashboard() {
   const checklist = onboarding
     ? onboarding.milestones
         .filter((m) => m.key !== "dual_control_enabled" || twoUsers || m.done_at)
-        .map((m) => ({ done: Boolean(m.done_at), label: MILESTONE_META[m.key].label, to: MILESTONE_META[m.key].to, optional: Boolean(m.optional) }))
+        .flatMap((m) => {
+          const row = { done: Boolean(m.done_at), label: MILESTONE_META[m.key].label, to: MILESTONE_META[m.key].to, optional: Boolean(m.optional) };
+          // VAPT needs a verified domain, so that step comes right before it.
+          if (m.key !== "first_vapt" || domainVerified === null) return [row];
+          return [{ done: domainVerified || row.done, label: DOMAIN_ITEM.label, to: DOMAIN_ITEM.to, optional: false }, row];
+        })
     : [
         { done: state.setup.setup_complete, label: "Organization setup complete", to: "/dashboard", optional: false },
         { done: twoUsers, label: "Two dual-control people created", to: "/users", optional: false },
@@ -142,7 +149,11 @@ export default function Dashboard() {
                 {checklist.map((c) => (
                   <button
                     key={c.label}
-                    onClick={() => !c.done && navigate(c.to)}
+                    onClick={() => {
+                      if (c.done) return;
+                      if (/^https?:\/\//.test(c.to)) window.location.assign(c.to);
+                      else navigate(c.to);
+                    }}
                     className={cx(
                       "flex w-full items-center gap-3 rounded-md border px-3 py-2 text-left text-sm transition-colors",
                       c.done ? "border-emerald-400/20 bg-emerald-400/5 text-slate-400" : "border-phantix-700/50 bg-phantix-950/40 text-slate-200 hover:border-gold-400/40",
