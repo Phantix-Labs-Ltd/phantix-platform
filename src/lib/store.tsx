@@ -163,6 +163,8 @@ type Session = {
 type SessionExpired = { active: boolean; returnTo: string };
 
 /** Where sign-up sends the user next (self-serve onboarding contract C1/C2). */
+/** A login link just issued: emailed to the user, and returned once for copying. */
+export type LoginLinkResult = { url: string; emailed: boolean; email: string; message?: string };
 export type OnboardingNext = "verify_email" | "first_asset" | "setup";
 export type RegisterResult = { signedIn: boolean; next: OnboardingNext; emailVerified: boolean };
 export type GithubAuthResult =
@@ -584,7 +586,7 @@ type Store = {
   requestDualControlOtp: (email: string) => Promise<{ destinationMasked: string; devOtp: string }>;
   verifyDualControlOtp: (code: string) => Promise<{ deviceRequired: boolean }>;
   confirmDualControlDevice: () => Promise<{ done: boolean }>;
-  issueLoginLink: (userId: number) => Promise<string>;
+  issueLoginLink: (userId: number) => Promise<LoginLinkResult>;
   clearDevice: (userId: number) => Promise<void>;
   deleteOrgUser: (id: number) => Promise<{ pending: boolean }>;
   // connections
@@ -2113,7 +2115,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           loginLinks: [{ id: s.nextId, user_id: userId, user_name: user?.full_name ?? "", created_at: new Date().toISOString(), used_at: null, status: "active" }, ...s.loginLinks],
           nextId: s.nextId + 1,
         }));
-        return url;
+        return { url, emailed: true, email: user?.email ?? "" };
       }
       // App login requires an active service key (per backend enforcement)
       if (!state.serviceKey) {
@@ -2124,7 +2126,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       // Requires org Bearer; dual-control session when configured
       const needsDc = state.dualControl.configured && !!tokens.dualControl;
-      const res = await api.post<{ login_url?: string; url?: string; login_link?: string; token?: string; message?: string }>(
+      const res = await api.post<{ login_url?: string; url?: string; login_link?: string; token?: string; message?: string; email_sent?: boolean; user_email?: string }>(
         `/organizations/me/users/${userId}/login-link`,
         {},
         needsDc ? { dualControl: true } : undefined,
@@ -2137,7 +2139,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         loginLinks: [{ id: s.nextId, user_id: userId, user_name: user?.full_name ?? "", created_at: new Date().toISOString(), used_at: null, status: "active" }, ...s.loginLinks],
         nextId: s.nextId + 1,
       }));
-      return url;
+      return { url, emailed: Boolean(res?.email_sent), email: res?.user_email ?? user?.email ?? "", message: res?.message };
     },
     [persist, state.users, state.org.slug, state.dualControl.configured],
   );

@@ -42,6 +42,9 @@ const Integrations = React.lazy(() => import("@/pages/Integrations"));
 const Sandbox = React.lazy(() => import("@/pages/Sandbox"));
 const GetStarted = React.lazy(() => import("@/pages/setup/GetStarted"));
 const ServiceKeyStep = React.lazy(() => import("@/pages/setup/ServiceKeyStep"));
+const AppAccessStep = React.lazy(() => import("@/pages/setup/AppAccessStep"));
+const DomainStep = React.lazy(() => import("@/pages/setup/DomainStep"));
+const ApplicationsStep = React.lazy(() => import("@/pages/setup/ApplicationsStep"));
 const DangerZone = React.lazy(() => import("@/pages/DangerZone"));
 const Docs = React.lazy(() => import("@/pages/Docs"));
 const DocPage = React.lazy(() => import("@/pages/DocPage"));
@@ -140,6 +143,9 @@ export default function App() {
             <Route path="/setup" element={<SetupRoute />} />
             <Route path="/get-started" element={<RequireManagement><GetStarted /></RequireManagement>} />
             <Route path="/get-started/service-key" element={<RequireManagement><ServiceKeyStep /></RequireManagement>} />
+            <Route path="/get-started/verify-domain" element={<RequireManagement><DomainStep /></RequireManagement>} />
+            <Route path="/get-started/applications" element={<RequireManagement><ApplicationsStep /></RequireManagement>} />
+            <Route path="/get-started/app-access" element={<RequireManagement><AppAccessStep /></RequireManagement>} />
             <Route element={<Layout />}>
               <Route path="/dashboard" element={<RequireManagement><Dashboard /></RequireManagement>} />
               <Route path="/sandbox" element={<RequireManagement><Sandbox /></RequireManagement>} />

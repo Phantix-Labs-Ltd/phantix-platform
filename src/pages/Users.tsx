@@ -973,7 +973,7 @@ function UsersTable({
                         if (!operate.unlocked && !(await onUnlock())) return;
                         setLinkingId(u.id);
                         try {
-                          const url = await issueLoginLink(u.id);
+                          const { url } = await issueLoginLink(u.id);
                           setLink({ user: u.full_name, url });
                         } catch (err) {
                           toast("error", "Failed", err instanceof Error ? err.message : "Could not generate login link");
@@ -1222,7 +1222,7 @@ function ReassignModal({
 }
 
 // ── Add user modal (post-bootstrap) ───────────────────────────────────────────
-function AddUserModal({
+export function AddUserModal({
   open, onClose, context = "user", defaultRole = "viewer",
 }: {
   open: boolean;

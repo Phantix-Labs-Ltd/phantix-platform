@@ -13,6 +13,17 @@ export const AUDIT_CONTROL_STEP = "/users?onboarding=1";
 // `from=quick-scan` makes the database page offer "Back to your Quick Scan" once
 // connected, so the scan results can be saved.
 export const SECURITY_DB_STEP = "/connections?from=quick-scan";
+// After the Quick Scan results are saved: verify the domain (active testing
+// needs it), choose the applications (Core and Attack to start), then create
+// app users and email them login links before anyone is sent to the apps.
+export const DOMAIN_STEP = "/get-started/verify-domain";
+export const APPLICATIONS_STEP = "/get-started/applications";
+export const APP_ACCESS_STEP = "/get-started/app-access";
+
+/** The domain step, with the domain to verify filled in when we know it. */
+export function domainStepFor(domain?: string | null): string {
+  return domain ? `${DOMAIN_STEP}?domain=${encodeURIComponent(domain)}` : DOMAIN_STEP;
+}
 
 /** Dual control is on and nobody has been assigned as initiator/authorizer yet. */
 export function needsAuditControl(state: StoreState): boolean {

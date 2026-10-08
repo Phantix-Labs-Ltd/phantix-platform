@@ -28,7 +28,13 @@ const ERRORS: Record<string, string> = {
  * covers itself and every subdomain for active testing. The applications link
  * here with `?verify=<domain>` so the domain is filled in already.
  */
-export default function VerifiedDomainsCard({ prefill }: { prefill?: string }) {
+export default function VerifiedDomainsCard({
+  prefill, onVerifiedChange,
+}: {
+  prefill?: string;
+  /** Called with how many domains are verified, whenever the list changes. */
+  onVerifiedChange?: (verified: number) => void;
+}) {
   const { toast } = useStore();
   const [items, setItems] = useState<Domain[] | null>(null);
   const [value, setValue] = useState(prefill || "");
@@ -47,6 +53,9 @@ export default function VerifiedDomainsCard({ prefill }: { prefill?: string }) {
   };
   useEffect(() => { void load(); }, []);
   useEffect(() => { if (prefill) setValue(prefill); }, [prefill]);
+  useEffect(() => {
+    if (items) onVerifiedChange?.(items.filter((d) => d.status === "verified").length);
+  }, [items, onVerifiedChange]);
 
   // Arriving from an application with a domain to verify that's already listed:
   // open its instructions instead of offering to add it again.

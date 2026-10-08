@@ -2,12 +2,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight, CheckCircle2, Circle, Database, ExternalLink, Github, Globe, Loader2, Radar, RefreshCw, ShieldCheck, XCircle,
+  ArrowRight, CheckCircle2, Circle, Database, Github, Globe, Loader2, Radar, RefreshCw, ShieldCheck, XCircle,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { errorCode } from "@/lib/api";
-import { nextAfterQuickScan, nextStepLabel } from "@/lib/firstRun";
-import { APP_URL } from "@/lib/links";
+import { domainStepFor, nextAfterQuickScan, nextStepLabel } from "@/lib/firstRun";
 import { cx } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -107,6 +106,11 @@ export default function GetStarted() {
     }
   };
 
+  // The scanned domain, or failing that the company email domain, is the one to verify.
+  const afterSave = domainStepFor(
+    scan?.target_type === "domain" ? scan.target : emailDomain && !PERSONAL_MAIL.has(emailDomain) ? emailDomain : null,
+  );
+
   const save = async () => {
     if (!scan) return;
     setBusy(true);
@@ -115,12 +119,14 @@ export default function GetStarted() {
       await importQuickScan(scan.id);
       setImported(true);
       void refreshOnboarding();
+      // Not the apps yet: verify the domain, then app users and login links.
+      navigate(afterSave);
     } catch (err) {
       const code = errorCode(err);
       if (code === "security_db_missing") navigate(nextStep);
-      else if (code === "already_imported") { setImported(true); void refreshOnboarding(); }
+      else if (code === "already_imported") { setImported(true); void refreshOnboarding(); navigate(afterSave); }
       else if (code === "quick_scan_expired") setError("This preview expired. Scan again to get fresh results.");
-      else if (await importFinishedAnyway(scan.id)) { setImported(true); void refreshOnboarding(); }
+      else if (await importFinishedAnyway(scan.id)) { setImported(true); void refreshOnboarding(); navigate(afterSave); }
       else setError(err instanceof Error ? err.message : "Could not save the results");
     } finally {
       setBusy(false);
@@ -271,7 +277,7 @@ export default function GetStarted() {
                       <p className="flex items-center gap-2.5 text-sm text-emerald-300">
                         <CheckCircle2 size={16} /> Saved to your security database.
                       </p>
-                      <a href={APP_URL} className="btn-primary">Open in SecureGraph <ExternalLink size={14} /></a>
+                      <Link to={afterSave} className="btn-primary">Continue <ArrowRight size={15} /></Link>
                     </div>
                   ) : (
                     <div className="flex flex-wrap items-center justify-between gap-4">

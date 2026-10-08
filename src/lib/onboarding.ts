@@ -6,6 +6,7 @@
  * the endpoint yields `null`, and every caller treats that as "no checklist".
  */
 import { api, DEMO_MODE, delay } from "./api";
+import { ATTACK_URL } from "./config";
 
 export type MilestoneKey =
   | "email_verified"
@@ -20,7 +21,8 @@ export type MilestoneKey =
 export type Milestone = { key: MilestoneKey; done_at: string | null; optional?: boolean };
 export type Onboarding = { milestones: Milestone[]; dismissed: boolean };
 
-/** What each milestone is called on the checklist and where it is done. */
+/** What each milestone is called on the checklist and where it is done.
+ *  An absolute URL opens that application (VAPT runs in Attack). */
 export const MILESTONE_META: Record<MilestoneKey, { label: string; detail: string; to: string }> = {
   email_verified:        { label: "Verify your email", detail: "Confirms you own the sign-in address.", to: "/setup" },
   first_asset:           { label: "Add a domain or repo", detail: "What you want SecureGraph to watch.", to: "/get-started" },
@@ -29,8 +31,22 @@ export const MILESTONE_META: Record<MilestoneKey, { label: string; detail: strin
   first_finding_viewed:  { label: "Review your first findings", detail: "See what an attacker would see first.", to: "/get-started" },
   teammate_invited:      { label: "Invite a teammate", detail: "Share findings and split the work.", to: "/users" },
   dual_control_enabled:  { label: "Turn on dual control", detail: "Optional: a second person approves risky actions.", to: "/identity#dual-control" },
-  first_vapt:            { label: "Run your first VAPT", detail: "Active testing on a verified target.", to: "/applications" },
+  first_vapt:            { label: "Run your first VAPT", detail: "Active testing on a verified target.", to: `${ATTACK_URL}/vapt` },
 };
+
+/** Checklist row added by the browser (no server milestone): a verified domain. */
+export const DOMAIN_ITEM = { label: "Verify your domain", detail: "Active testing needs a domain you own.", to: "/identity#domains" };
+
+/** Whether the organization has at least one verified domain (null: unknown). */
+export async function hasVerifiedDomain(): Promise<boolean | null> {
+  if (DEMO_MODE) return false;
+  try {
+    const res = await api.get<{ items?: { status?: string }[] }>("/organizations/me/domains");
+    return Array.isArray(res?.items) ? res.items.some((d) => d.status === "verified") : null;
+  } catch {
+    return null;
+  }
+}
 
 export const isDone = (o: Onboarding | null, key: MilestoneKey) =>
   Boolean(o?.milestones.find((m) => m.key === key)?.done_at);
