@@ -153,37 +153,43 @@ export default function ConnectorsCard({
 }
 
 function AddConnectorModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (e: ConnectorEnrollment) => void }) {
+  return (
+    <Modal open={open} onClose={onClose} title="Add a connector">
+      {open && <AddConnectorForm onCreated={onCreated} />}
+    </Modal>
+  );
+}
+
+/** Name a new connector and get its one-time setup token. */
+export function AddConnectorForm({ onCreated }: { onCreated: (e: ConnectorEnrollment) => void }) {
   const { toast } = useStore();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => { if (open) setName(""); }, [open]);
   return (
-    <Modal open={open} onClose={onClose} title="Add a connector">
-      <form
-        className="space-y-4"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          if (!name.trim()) return;
-          setBusy(true);
-          try {
-            onCreated(await createConnector(name.trim()));
-          } catch (err) {
-            toast("error", "Could not create the connector", err instanceof Error ? err.message : "");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <div>
-          <label className="label" htmlFor="cn-name">Name</label>
-          <input id="cn-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Lagos data centre" autoFocus />
-          <p className="mt-1 text-[12px] text-slate-500">Where it runs, so you can tell connectors apart.</p>
-        </div>
-        <button className="btn-primary w-full" disabled={busy || !name.trim()}>
-          {busy ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Create connector
-        </button>
-      </form>
-    </Modal>
+    <form
+      className="space-y-4"
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (!name.trim()) return;
+        setBusy(true);
+        try {
+          onCreated(await createConnector(name.trim()));
+        } catch (err) {
+          toast("error", "Could not create the connector", err instanceof Error ? err.message : "");
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <div>
+        <label className="label" htmlFor="cn-name">Name</label>
+        <input id="cn-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Lagos data centre" autoFocus />
+        <p className="mt-1 text-[12px] text-slate-500">Where it runs, so you can tell connectors apart.</p>
+      </div>
+      <button className="btn-primary w-full" disabled={busy || !name.trim()}>
+        {busy ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />} Create connector
+      </button>
+    </form>
   );
 }
 

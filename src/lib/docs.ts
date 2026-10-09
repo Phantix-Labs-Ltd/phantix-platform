@@ -34,12 +34,12 @@ export const docCategories = [
 
 export const docs: DocEntry[] = [
   { id: "howto-platform-index", title: "Platform how-tos", description: "The full task index for company and security admins.", category: "how-to-platform", content: howtoIndex, badge: "Start here" },
-  { id: "howto-platform-01", title: "Register and sign in", description: "Create your organization tenant and sign in.", category: "how-to-platform", content: howto01 },
-  { id: "howto-platform-02", title: "Complete the setup wizard", description: "Privacy notice, company profile, and email verification.", category: "how-to-platform", content: howto02 },
+  { id: "howto-platform-01", title: "Register and sign in", description: "Register during the beta, join the waitlist, and sign in.", category: "how-to-platform", content: howto01 },
+  { id: "howto-platform-02", title: "Complete the setup", description: "Email code, Quick Scan, security database, plan, applications and login links.", category: "how-to-platform", content: howto02 },
   { id: "howto-platform-03", title: "Add a new user", description: "Invite people into the organization.", category: "how-to-platform", content: howto03 },
   { id: "howto-platform-04", title: "Assign audit control", description: "Set the initiator and authorizer who control the audit trail.", category: "how-to-platform", content: howto04 },
   { id: "howto-platform-05", title: "Issue a Command Centre login link", description: "Get operators into the product app.", category: "how-to-platform", content: howto05 },
-  { id: "howto-platform-06", title: "Connect a security database", description: "Bootstrap the security_data_storage connection.", category: "how-to-platform", content: howto06 },
+  { id: "howto-platform-06", title: "Connect a security database", description: "The guided journey: hosted with an allowlist, or private through a connector.", category: "how-to-platform", content: howto06 },
   { id: "howto-platform-07", title: "Connect a config database", description: "Optional config-inspection database connection.", category: "how-to-platform", content: howto07 },
   { id: "howto-platform-08", title: "Identity, service keys and brand assets", description: "Tenant identity, keys and brand assets.", category: "how-to-platform", content: howto08 },
   { id: "howto-platform-09", title: "Audit control", description: "Who controls the audit trail on the platform.", category: "how-to-platform", content: howto09 },

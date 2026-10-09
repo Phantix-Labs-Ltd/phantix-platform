@@ -128,6 +128,8 @@ export interface DbConnection {
   last_test_at: string | null;
   last_test_ok: boolean;
   created_at: string;
+  /** How SecureGraph reaches it: directly (public endpoint) or through a connector. */
+  network_mode?: "direct" | "connector";
 }
 
 export interface AuditEvent {

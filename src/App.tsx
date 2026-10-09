@@ -10,6 +10,7 @@ import Login from "@/pages/auth/Login";
 import ChangePassword from "@/pages/auth/ChangePassword";
 import DeviceConfirm from "@/pages/DeviceConfirm";
 import Register from "@/pages/auth/Register";
+import Waitlist from "@/pages/auth/Waitlist";
 import GithubAuthCallback from "@/pages/auth/GithubAuthCallback";
 import StepUpPrompt from "@/components/StepUpPrompt";
 import AlertNotifications, { ConnectionWatch, NotificationProvider } from "@/components/Notifications";
@@ -28,6 +29,7 @@ const Identity = React.lazy(() => import("@/pages/Identity"));
 const Companies = React.lazy(() => import("@/pages/Companies"));
 const Users = React.lazy(() => import("@/pages/Users"));
 const Connections = React.lazy(() => import("@/pages/Connections"));
+const SecurityDbJourney = React.lazy(() => import("@/pages/SecurityDbJourney"));
 const GithubIntegration = React.lazy(() => import("@/pages/Github"));
 const Applications = React.lazy(() => import("@/pages/Applications"));
 const Tools = React.lazy(() => import("@/pages/Tools"));
@@ -134,6 +136,7 @@ export default function App() {
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/device-confirm" element={<DeviceConfirm />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/waitlist" element={<Waitlist />} />
             <Route path="/auth/github/callback" element={<GithubAuthCallback />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
@@ -155,6 +158,7 @@ export default function App() {
               <Route path="/companies" element={<RequireManagement><Companies /></RequireManagement>} />
               <Route path="/users" element={<RequireManagement><Users /></RequireManagement>} />
               <Route path="/connections" element={<RequireManagement><Connections /></RequireManagement>} />
+              <Route path="/connections/new/*" element={<RequireManagement><SecurityDbJourney /></RequireManagement>} />
               <Route path="/github" element={<RequireManagement><GithubIntegration /></RequireManagement>} />
               <Route path="/integrations/github/callback" element={<RequireManagement><GithubIntegration /></RequireManagement>} />
               <Route path="/applications" element={<RequireManagement><Applications /></RequireManagement>} />

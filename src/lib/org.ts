@@ -268,6 +268,7 @@ export function mapConnectionFromApi(raw: unknown): DbConnection | null {
     last_test_at: str(r.last_test_at),
     last_test_ok: bool(r.last_test_ok ?? r.last_test_passed),
     created_at: str(r.created_at) || new Date().toISOString(),
+    network_mode: r.network_mode === "connector" ? "connector" : r.network_mode === "direct" ? "direct" : undefined,
   };
 }
 

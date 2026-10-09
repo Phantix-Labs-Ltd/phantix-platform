@@ -1,49 +1,44 @@
 import React, { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, Plus, ShieldCheck, AlertTriangle, Loader2, Trash2, Zap, Info, ArrowLeft, ArrowRight, Cloud, Network } from "lucide-react";
+import { Database, Plus, ShieldCheck, Loader2, Trash2, Zap, Info, ArrowLeft, ArrowRight } from "lucide-react";
 import DocLink from "@/components/DocLink";
-import QuickConnectDatabase from "@/components/QuickConnectDatabase";
-import SecurityDbSetupModal from "@/components/SecurityDbSetupModal";
+import ConnectionForm, { ENGINES, PURPOSES, type Engine, type Purpose } from "@/components/ConnectionForm";
 import ConnectorsCard from "@/components/ConnectorsCard";
 import ConnectorInstallGuide from "@/components/ConnectorInstallGuide";
+import AllowlistDriftBanner from "@/components/AllowlistDriftBanner";
 import { listConnectors, type Connector } from "@/lib/connectors";
-import { PageHeader, Card, CollapsibleCard, StatusBadge, Modal, EmptyState } from "@/components/ui";
+import { PageHeader, Card, CollapsibleCard, StatusBadge, Modal } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { api, DEMO_MODE } from "@/lib/api";
+import { useConnectionGuard } from "@/lib/useConnectionGuard";
 import { timeAgo, cx, humanize } from "@/lib/utils";
 
+/**
+ * Security database. Until one is connected and prepared there is one thing to
+ * do, so the page offers only that: the guided journey (/connections/new).
+ * Once it is ready the page manages connections, connectors and drivers.
+ */
 export default function Connections() {
-  const {
-    state, testConnection, bootstrapConnection, deleteConnection, operate, securityDbReady,
-    toast, requireDualControl, refreshConnections, hydrateSession,
-  } = useStore();
+  const { state, securityDbReady, refreshConnections } = useStore();
+  const guard = useConnectionGuard();
+  const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
-  // A security database just added: walk through test → prepare → continue.
-  const [setupId, setSetupId] = useState<number | null>(null);
   const [connectors, setConnectors] = useState<Connector[]>([]);
-  // Where the database lives decides how SecureGraph reaches it: a hosted
-  // database (public endpoint) connects directly; one on a private network
-  // goes through a SecureGraph Connector.
-  const [where, setWhere] = useState<"hosted" | "private">("hosted");
   // Connector to preselect when the connection form opens from a connector.
   const [presetConnector, setPresetConnector] = useState<string | null>(null);
   React.useEffect(() => {
     let alive = true;
     void listConnectors()
-      .then((list) => {
-        if (!alive) return;
-        setConnectors(list);
-        if (list.some((c) => c.status !== "revoked")) setWhere("private");
-      })
+      .then((list) => { if (alive) setConnectors(list); })
       .catch(() => {});
     return () => { alive = false; };
   }, []);
-  const [busyId, setBusyId] = useState<number | null>(null);
   const [drivers, setDrivers] = useState<{ db_type: string; live: boolean; note?: string }[]>([]);
   const [optionHints, setOptionHints] = useState<any>(null);
   const [params] = useSearchParams();
   const fromQuickScan = params.get("from") === "quick-scan";
+  const journeyQs = fromQuickScan ? "?from=quick-scan" : "";
 
   React.useEffect(() => {
     if (!DEMO_MODE) {
@@ -61,16 +56,59 @@ export default function Connections() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Dual control must be set up before managing DB connections. */
-  const guard = async () => {
-    if (state.dualControl.policy_mode === "off") return true;
-    if (!state.dualControl.configured) {
-      toast("warning", "Audit control required", "Set up audit control on the People page before you manage database connections.");
-      return false;
-    }
-    if (operate.unlocked) return true;
-    return requireDualControl("Manage security database connections requires a dual-control operate session.");
-  };
+  // A security database saved earlier but not prepared yet: finish that one.
+  const unfinished = state.connections.find((c) => c.connection_purpose === "security_data_storage" && c.bootstrap_status !== "ready") || null;
+
+  if (!securityDbReady) {
+    return (
+      <div>
+        <PageHeader
+          title="Security database"
+          description="Your findings, assets and evidence live in a database you own. Scans, VAPT and saved findings need it; Quick Scans work without one."
+          actions={<DocLink docId="howto-platform-06" label="Connections how-to" />}
+        />
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="relative overflow-hidden">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-gold-400/10 blur-[70px]" />
+            <div className="relative flex flex-wrap items-center gap-5">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gold-400/15 text-gold-400">
+                <Database size={22} />
+              </span>
+              <div className="min-w-[14rem] flex-1">
+                <p className="font-display text-lg font-bold text-white">
+                  {unfinished ? `Finish setting up ${unfinished.name}` : "Connect your security database"}
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-400">
+                  {unfinished
+                    ? "It is saved but not prepared yet. Test it and let SecureGraph create its schema."
+                    : "A few guided steps: where it runs, how SecureGraph reaches it, then the database itself."}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-primary w-full justify-center sm:w-auto"
+                onClick={() => navigate(unfinished ? `/connections/new/prepare/${unfinished.id}${journeyQs}` : `/connections/new${journeyQs}`)}
+              >
+                {unfinished ? "Finish setup" : "Connect database"} <ArrowRight size={15} />
+              </button>
+            </div>
+            {unfinished && (
+              <Link to={`/connections/new${journeyQs}`} className="relative mt-4 inline-block text-[13px] text-slate-400 hover:text-slate-200">
+                Connect a different database instead
+              </Link>
+            )}
+          </Card>
+        </motion.div>
+
+        {/* What was added before, kept out of the way of the one action above. */}
+        {state.connections.length > 0 && (
+          <CollapsibleCard className="mt-5" title={`Existing connections (${state.connections.length})`} defaultOpen={false}>
+            <ConnectionsTable guard={guard} />
+          </CollapsibleCard>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -81,7 +119,7 @@ export default function Connections() {
           <>
             <DocLink docId="howto-platform-06" label="Connections how-to" />
             <button className="btn-primary" onClick={async () => { if (await guard()) setCreateOpen(true); }}>
-              <Plus size={15} /> Add connection
+              <Plus size={15} /> Add another connection
             </button>
           </>
         }
@@ -91,92 +129,38 @@ export default function Connections() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={cx(
-          "mb-5 flex items-start gap-3 rounded-2xl border px-4 py-3",
-          securityDbReady ? "border-emerald-400/25 bg-emerald-400/5" : "border-severity-medium/30 bg-severity-medium/8",
-        )}
+        className="mb-5 flex items-start gap-3 rounded-2xl border border-emerald-400/25 bg-emerald-400/5 px-4 py-3"
       >
-        {securityDbReady ? <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-400" /> : <AlertTriangle size={16} className="mt-0.5 shrink-0 text-severity-medium" />}
+        <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-400" />
         <p className="text-xs leading-5 text-slate-400">
-          {securityDbReady ? (
-            <><strong className="text-emerald-300">Bootstrap gate: ready.</strong> The primary security store is connected. Scans, VAPT and findings are unblocked.</>
-          ) : (
-            <><strong className="text-severity-medium">Not connected yet.</strong> Full scans, VAPT and saved findings need a security database. Quick Scans work without one.</>
-          )}
+          <strong className="text-emerald-300">Bootstrap gate: ready.</strong> The primary security store is connected. Scans, VAPT and findings are unblocked.
         </p>
-        {securityDbReady && fromQuickScan && (
+        {fromQuickScan && (
           <Link to="/get-started" className="btn-primary ml-auto shrink-0 !py-1.5 text-xs">
             Back to your Quick Scan <ArrowRight size={13} />
           </Link>
         )}
       </motion.div>
 
-      {/* Where is the database? */}
-      <section aria-labelledby="where-db" className="mb-5">
-        <h2 id="where-db" className="mb-2 text-sm font-semibold text-slate-200">Where is your database?</h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup">
-          {([
-            ["hosted", Cloud, "Hosted, with a public endpoint", "Neon, Supabase, or a cloud database you can reach over the internet. SecureGraph connects directly."],
-            ["private", Network, "On a private network", "In your data centre, office or private cloud subnet. Install the SecureGraph Connector next to it; nothing is opened inbound."],
-          ] as const).map(([v, Icon, label, desc]) => (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={where === v}
-              onClick={() => setWhere(v)}
-              className={cx(
-                "flex items-start gap-3 rounded-lg border p-4 text-left transition-colors",
-                where === v ? "border-gold-400/60 bg-gold-400/[0.06]" : "border-phantix-700/50 hover:border-phantix-500/60",
-              )}
-            >
-              <Icon size={18} className={cx("mt-0.5 shrink-0", where === v ? "text-gold-400" : "text-slate-500")} />
-              <span>
-                <span className="block text-sm font-semibold text-white">{label}</span>
-                <span className="mt-0.5 block text-[13px] leading-5 text-slate-400">{desc}</span>
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
+      <AllowlistDriftBanner manage />
 
-      {where === "hosted" ? (
-        !securityDbReady && (
-          <QuickConnectDatabase guard={guard} onManual={async () => { if (await guard()) setCreateOpen(true); }} onCreated={setSetupId} />
-        )
-      ) : (
-        <>
-          <Card className="mb-5">
-            <p className="text-sm font-semibold text-slate-100">Connect a database on a private network</p>
-            <ol className="mt-3 grid grid-cols-1 gap-3 text-[13px] sm:grid-cols-4">
-              {[
-                ["Create a connector", "Name it after where it will run. You get a one-time setup token."],
-                ["Install it", "One Docker command, a Compose service or a Kubernetes manifest, next to the database."],
-                ["Wait for Online", "It connects out to SecureGraph over HTTPS. No inbound port."],
-                ["Add the database", "Choose Through a connector and enter the database address."],
-              ].map(([title, body], i) => (
-                <li key={title} className="rounded-md border border-phantix-700/40 p-3">
-                  <p className="font-medium text-slate-100"><span className="mr-1.5 text-gold-400">{i + 1}.</span>{title}</p>
-                  <p className="mt-1 leading-5 text-slate-400">{body}</p>
-                </li>
-              ))}
-            </ol>
-          </Card>
-          <ConnectorsCard
-            guard={guard}
-            onChange={setConnectors}
-            onAddDatabase={async (id) => { if (await guard()) { setPresetConnector(id); setCreateOpen(true); } }}
-          />
-          <CollapsibleCard
-            className="mb-5"
-            title="Installation procedure"
-            subtitle="Docker, Docker Compose or Kubernetes, with prerequisites and troubleshooting"
-            defaultOpen={false}
-          >
-            <ConnectorInstallGuide />
-          </CollapsibleCard>
-        </>
-      )}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-5">
+        <ConnectionsTable guard={guard} />
+      </motion.div>
+
+      <ConnectorsCard
+        guard={guard}
+        onChange={setConnectors}
+        onAddDatabase={async (id) => { if (await guard()) { setPresetConnector(id); setCreateOpen(true); } }}
+      />
+      <CollapsibleCard
+        className="mb-5"
+        title="Connector installation procedure"
+        subtitle="Docker, Docker Compose or Kubernetes, with prerequisites and troubleshooting"
+        defaultOpen={false}
+      >
+        <ConnectorInstallGuide />
+      </CollapsibleCard>
 
       {optionHints?.by_db_type && (
         <CollapsibleCard
@@ -198,135 +182,6 @@ export default function Connections() {
             ))}
           </div>
         </CollapsibleCard>
-      )}
-
-      {state.connections.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={<Database size={22} />}
-            title="No connections yet"
-            body="Register your dedicated security database (PostgreSQL recommended). Credentials are stored encrypted."
-            action={<button className="btn-primary" onClick={async () => { if (await guard()) setCreateOpen(true); }}><Plus size={15} /> Add the first connection</button>}
-          />
-        </Card>
-      ) : (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <Card className="!p-0 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-phantix-700/40">
-                    <th className="th">Name</th>
-                    <th className="th">Engine</th>
-                    <th className="th">Host:Port · DB</th>
-                    <th className="th">Purpose</th>
-                    <th className="th">Last test</th>
-                    <th className="th">Status</th>
-                    <th className="th"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state.connections.map((c) => (
-                    <tr key={c.id} className="border-b border-phantix-800/40 hover:bg-phantix-800/35">
-                      <td className="td">
-                        <div className="flex items-center gap-3">
-                          <span className={cx("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", c.bootstrap_status === "ready" ? "bg-emerald-400/12 text-emerald-400" : "bg-phantix-800/70 text-phantix-300")}>
-                            <Database size={16} />
-                          </span>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 whitespace-nowrap">
-                              <span className="font-medium text-slate-100">{c.name}</span>
-                              {c.is_primary && <span className="chip border-gold-400/30 bg-gold-400/10 text-gold-300">primary</span>}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="td font-mono text-xs text-slate-400">{c.db_type}</td>
-                      <td className="td whitespace-nowrap font-mono text-xs text-slate-500">{c.host}:{c.port}/{c.database_name}</td>
-                      <td
-                        className="td whitespace-nowrap text-[13px] text-slate-400"
-                        title={c.connection_purpose === "security_data_storage" ? "Own dedicated schema" : "Roles, privileges, policies"}
-                      >
-                        {humanize(c.connection_purpose)}
-                      </td>
-                      <td className="td whitespace-nowrap text-xs text-slate-500">
-                        {c.last_test_at ? `${c.last_test_ok ? "passed" : "failed"} ${timeAgo(c.last_test_at)}` : "Not set"}
-                      </td>
-                      <td className="td"><StatusBadge status={c.bootstrap_status} /></td>
-                      <td className="td text-right">
-                        <div className="flex flex-wrap justify-end items-center gap-1.5">
-                          <button
-                            className="btn-secondary !px-2.5 !py-1.5 !text-xs"
-                            disabled={busyId === c.id}
-                            onClick={async () => {
-                              if (!(await guard())) return;
-                              setBusyId(c.id);
-                              try {
-                                await testConnection(c.id);
-                                toast("success", "Connectivity OK", "Live probe succeeded.");
-                              } catch (err) {
-                                toast("error", "Test failed", err instanceof Error ? err.message : "Connection test failed");
-                              } finally {
-                                setBusyId(null);
-                              }
-                            }}
-                          >
-                            {busyId === c.id ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />} Test
-                          </button>
-                          {c.connection_purpose === "security_data_storage" && c.bootstrap_status !== "ready" && (
-                            <button
-                              className="btn-primary !px-2.5 !py-1.5 !text-xs"
-                              disabled={busyId === c.id}
-                              onClick={async () => {
-                                if (!(await guard())) return;
-                                setBusyId(c.id);
-                                try {
-                                  const boot = await bootstrapConnection(c.id);
-                                  if (boot?.pending) {
-                                    toast("info", "Sent for approval", "Schema bootstrap is parked for an authorizer. Approve it from Authorizations to finish.");
-                                  } else {
-                                    toast("success", "Schema bootstrapped", "Security database ready: assets, scans, findings, risks, evidence.");
-                                  }
-                                } catch (err) {
-                                  toast("error", "Bootstrap failed", err instanceof Error ? err.message : "Bootstrap failed");
-                                } finally {
-                                  setBusyId(null);
-                                }
-                              }}
-                            >
-                              {busyId === c.id ? <Loader2 size={13} className="animate-spin" /> : null}
-                              Bootstrap schema
-                            </button>
-                          )}
-                          <button
-                            className="btn-ghost !p-1.5 text-slate-500 hover:text-severity-critical"
-                            aria-label="Delete connection"
-                            title="Delete connection"
-                            onClick={async () => {
-                              if (!(await guard())) return;
-                              try {
-                                const del = await deleteConnection(c.id);
-                                if (del?.pending) {
-                                  toast("info", "Sent for approval", "Connection removal is parked for an authorizer. Approve it from Authorizations.");
-                                } else {
-                                  toast("info", "Connection deleted");
-                                }
-                              } catch (err) {
-                                toast("error", "Delete failed", err instanceof Error ? err.message : "Delete failed");
-                              }
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </motion.div>
       )}
 
       {/* Driver availability */}
@@ -353,31 +208,162 @@ export default function Connections() {
         </CollapsibleCard>
       </motion.div>
 
-      <CreateConnectionModal open={createOpen} onClose={() => { setCreateOpen(false); setPresetConnector(null); }} onCreated={setSetupId} connectors={connectors} presetConnector={presetConnector} />
-      <SecurityDbSetupModal connectionId={setupId} onClose={() => setSetupId(null)} />
+      <CreateConnectionModal
+        open={createOpen}
+        onClose={() => { setCreateOpen(false); setPresetConnector(null); }}
+        onSecurityDbCreated={(id) => navigate(`/connections/new/prepare/${id}${journeyQs}`)}
+        onStartJourney={() => navigate(`/connections/new${journeyQs}`)}
+        connectors={connectors}
+        presetConnector={presetConnector}
+      />
     </div>
   );
 }
 
-const PURPOSES = [
-  { value: "security_data_storage", name: "Security database", icon: ShieldCheck, desc: "SecureGraph stores your findings, assets and evidence here, in its own dedicated schema on a PostgreSQL database. Your organization's primary connection." },
-  { value: "config_inspection", name: "Config inspection", icon: Info, desc: "SecureGraph checks this database's security settings, such as roles, privileges and policies, read-only. It never reads your business data." },
-] as const;
-type Purpose = (typeof PURPOSES)[number]["value"];
+/** Every connection with its test, prepare and delete actions. */
+function ConnectionsTable({ guard }: { guard: () => Promise<boolean> }) {
+  const { state, testConnection, bootstrapConnection, deleteConnection, toast } = useStore();
+  const [busyId, setBusyId] = useState<number | null>(null);
 
-const ENGINES = [
-  { value: "postgresql", name: "PostgreSQL", port: 5432, desc: "Open-source relational database, including Supabase, Neon, Amazon RDS and Azure Database for PostgreSQL." },
-  { value: "mysql", name: "MySQL or MariaDB", port: 3306, desc: "Widely used relational database, including Amazon Aurora MySQL and PlanetScale." },
-  { value: "mssql", name: "Microsoft SQL Server", port: 1433, desc: "Microsoft's relational database, including Azure SQL Database." },
-  { value: "mongodb", name: "MongoDB", port: 27017, desc: "Document database that stores JSON-like records, including MongoDB Atlas." },
-] as const;
-type Engine = (typeof ENGINES)[number];
+  if (state.connections.length === 0) {
+    return <p className="text-sm text-slate-500">No connections yet.</p>;
+  }
+  return (
+    <Card className="!p-0 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-phantix-700/40">
+              <th className="th">Name</th>
+              <th className="th">Engine</th>
+              <th className="th">Host:Port · DB</th>
+              <th className="th">Purpose</th>
+              <th className="th">Last test</th>
+              <th className="th">Status</th>
+              <th className="th"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {state.connections.map((c) => (
+              <tr key={c.id} className="border-b border-phantix-800/40 hover:bg-phantix-800/35">
+                <td className="td">
+                  <div className="flex items-center gap-3">
+                    <span className={cx("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", c.bootstrap_status === "ready" ? "bg-emerald-400/12 text-emerald-400" : "bg-phantix-800/70 text-phantix-300")}>
+                      <Database size={16} />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="font-medium text-slate-100">{c.name}</span>
+                        {c.is_primary && <span className="chip border-gold-400/30 bg-gold-400/10 text-gold-300">primary</span>}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="td font-mono text-xs text-slate-400">{c.db_type}</td>
+                <td className="td whitespace-nowrap font-mono text-xs text-slate-500">{c.host}:{c.port}/{c.database_name}</td>
+                <td
+                  className="td whitespace-nowrap text-[13px] text-slate-400"
+                  title={c.connection_purpose === "security_data_storage" ? "Own dedicated schema" : "Roles, privileges, policies"}
+                >
+                  {humanize(c.connection_purpose)}
+                </td>
+                <td className="td whitespace-nowrap text-xs text-slate-500">
+                  {c.last_test_at ? `${c.last_test_ok ? "passed" : "failed"} ${timeAgo(c.last_test_at)}` : "Not set"}
+                </td>
+                <td className="td"><StatusBadge status={c.bootstrap_status} /></td>
+                <td className="td text-right">
+                  <div className="flex flex-wrap justify-end items-center gap-1.5">
+                    <button
+                      className="btn-secondary !px-2.5 !py-1.5 !text-xs"
+                      disabled={busyId === c.id}
+                      onClick={async () => {
+                        if (!(await guard())) return;
+                        setBusyId(c.id);
+                        try {
+                          await testConnection(c.id);
+                          toast("success", "Connectivity OK", "Live probe succeeded.");
+                        } catch (err) {
+                          toast("error", "Test failed", err instanceof Error ? err.message : "Connection test failed");
+                        } finally {
+                          setBusyId(null);
+                        }
+                      }}
+                    >
+                      {busyId === c.id ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />} Test
+                    </button>
+                    {c.connection_purpose === "security_data_storage" && c.bootstrap_status !== "ready" && (
+                      <button
+                        className="btn-primary !px-2.5 !py-1.5 !text-xs"
+                        disabled={busyId === c.id}
+                        onClick={async () => {
+                          if (!(await guard())) return;
+                          setBusyId(c.id);
+                          try {
+                            const boot = await bootstrapConnection(c.id);
+                            if (boot?.pending) {
+                              toast("info", "Sent for approval", "Schema bootstrap is parked for an authorizer. Approve it from Authorizations to finish.");
+                            } else {
+                              toast("success", "Schema bootstrapped", "Security database ready: assets, scans, findings, risks, evidence.");
+                            }
+                          } catch (err) {
+                            toast("error", "Bootstrap failed", err instanceof Error ? err.message : "Bootstrap failed");
+                          } finally {
+                            setBusyId(null);
+                          }
+                        }}
+                      >
+                        {busyId === c.id ? <Loader2 size={13} className="animate-spin" /> : null}
+                        Bootstrap schema
+                      </button>
+                    )}
+                    <button
+                      className="btn-ghost !p-1.5 text-slate-500 hover:text-severity-critical"
+                      aria-label="Delete connection"
+                      title="Delete connection"
+                      onClick={async () => {
+                        if (!(await guard())) return;
+                        try {
+                          const del = await deleteConnection(c.id);
+                          if (del?.pending) {
+                            toast("info", "Sent for approval", "Connection removal is parked for an authorizer. Approve it from Authorizations.");
+                          } else {
+                            toast("info", "Connection deleted");
+                          }
+                        } catch (err) {
+                          toast("error", "Delete failed", err instanceof Error ? err.message : "Delete failed");
+                        }
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
 
-function CreateConnectionModal({ open, onClose, onCreated, connectors, presetConnector }: { open: boolean; onClose: () => void; onCreated: (id: number) => void; connectors: Connector[]; presetConnector?: string | null }) {
-  const { createConnection, toast, state, requireDualControl, operate } = useStore();
-  const [busy, setBusy] = useState(false);
+/**
+ * Another connection once the security database is ready: usually a
+ * config-inspection connection, in any supported engine. A new security
+ * database goes through the guided journey instead, so a hosted one cannot skip
+ * the allowlist; only one behind an existing connector is added here.
+ */
+function CreateConnectionModal({ open, onClose, onSecurityDbCreated, onStartJourney, connectors, presetConnector }: {
+  open: boolean;
+  onClose: () => void;
+  onSecurityDbCreated: (id: number) => void;
+  onStartJourney: () => void;
+  connectors: Connector[];
+  presetConnector?: string | null;
+}) {
   // Step 1 picks what the database is for, step 2 its type; the details form
   // only shows once both are chosen.
+  const [purpose, setPurpose] = useState<Purpose | null>(null);
   const [engine, setEngine] = useState<Engine | null>(null);
   React.useEffect(() => {
     if (!open) return;
@@ -385,44 +371,10 @@ function CreateConnectionModal({ open, onClose, onCreated, connectors, presetCon
       // Opened from a connector: a PostgreSQL security database behind it.
       setPurpose("security_data_storage");
       setEngine(ENGINES[0]);
-      setVia("connector");
-      setConnectorId(presetConnector);
     } else {
-      setEngine(null); setPurpose(null); setVia("direct"); setConnectorId("");
+      setEngine(null); setPurpose(null);
     }
   }, [open, presetConnector]);
-  // How SecureGraph reaches the database: directly, or through a connector on
-  // the organization's private network (PostgreSQL only for now).
-  const [via, setVia] = useState<"direct" | "connector">("direct");
-  const [connectorId, setConnectorId] = useState("");
-  const usable = connectors.filter((c) => c.status !== "revoked");
-  const [purpose, setPurpose] = useState<Purpose | null>(null);
-  const [resolvingHost, setResolvingHost] = useState<string | null>(null);
-
-  const resolveHost = async (host: string): Promise<string> => {
-    // Skip if already an IP address
-    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(host)) return host;
-    setResolvingHost(host);
-    try {
-      const res = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=A`);
-      const data = await res.json();
-      if (data.Answer?.length > 0) {
-        const ipv4 = data.Answer.find((a: any) => a.type === 1)?.data;
-        if (ipv4) {
-          toast("info", "DNS resolved", `${host} → ${ipv4}`);
-          return ipv4;
-        }
-      }
-      // No A record found --- pass original host (backend may handle it)
-      toast("warning", "No IPv4 record", `${host} could not be resolved. SecureGraph passes it as is`);
-      return host;
-    } catch {
-      toast("warning", "DNS lookup failed", `Could not resolve ${host}. SecureGraph passes it as is`);
-      return host;
-    } finally {
-      setResolvingHost(null);
-    }
-  };
 
   return (
     <Modal open={open} onClose={onClose} title={purpose && engine ? `Add ${engine.name} ${purpose === "security_data_storage" ? "security database" : "config inspection connection"}` : "Add database connection"} wide>
@@ -435,9 +387,12 @@ function CreateConnectionModal({ open, onClose, onCreated, connectors, presetCon
                 type="button"
                 key={p.value}
                 onClick={() => {
+                  if (p.value === "security_data_storage") {
+                    onClose();
+                    onStartJourney();
+                    return;
+                  }
                   setPurpose(p.value);
-                  // The security database is always PostgreSQL, so it skips the type step.
-                  if (p.value === "security_data_storage") setEngine(ENGINES[0]);
                 }}
                 className="group rounded-md border border-phantix-700/50 bg-phantix-950/40 p-4 text-left transition-all hover:border-gold-400/50 hover:bg-gold-400/5"
               >
@@ -474,166 +429,20 @@ function CreateConnectionModal({ open, onClose, onCreated, connectors, presetCon
           </div>
         </div>
       ) : (
-      <form
-        key={`${engine.value}-${purpose}`}
-        className="space-y-4"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          // Capture the form element synchronously: React nulls ``e.currentTarget``
-          // once this async handler awaits, so ``new FormData(e.currentTarget)``
-          // threw "parameter 1 is not of type 'HTMLFormElement'" after dual-control.
-          const form = e.currentTarget;
-          // Enforce dual control (solo mode has none to enforce)
-          if (state.dualControl.policy_mode !== "off" && !state.dualControl.configured) {
-            toast("warning", "Audit control required", "Set up the audit controller on the People page first.");
-            return;
-          }
-          if (state.dualControl.configured && !operate.unlocked) {
-            const ok = await requireDualControl("Managing security database connections requires a dual-control operate session.");
-            if (!ok) return;
-          }
-          const f = new FormData(form);
-          setBusy(true);
-          try {
-            const throughConnector = via === "connector" && engine?.value === "postgresql";
-            if (throughConnector && !connectorId) {
-              toast("warning", "Choose a connector", "Pick the connector this database is reached through.");
-              setBusy(false);
-              return;
-            }
-            let host = String(f.get("host")).trim();
-            // A host behind a connector is a private name or address: never look it up publicly.
-            if (!throughConnector) host = await resolveHost(host);
-            const id = await createConnection({
-              name: String(f.get("name")),
-              connection_purpose: purpose,
-              db_type: String(f.get("db_type")),
-              host,
-              port: Number(f.get("port")),
-              database_name: String(f.get("database_name")),
-              target_schema: String(f.get("target_schema")) || "phantix",
-              is_primary: purpose === "security_data_storage",
-              username: String(f.get("username") || ""),
-              password: String(f.get("password") || ""),
-              ssl_mode: String(f.get("ssl_mode") || "prefer"),
-              network_mode: throughConnector ? "connector" : "direct",
-              connector_id: throughConnector ? connectorId : null,
-              environment: String(f.get("environment") || "production"),
-            });
+        <ConnectionForm
+          purpose={purpose}
+          engine={engine}
+          connectors={connectors}
+          via={presetConnector ? "connector" : undefined}
+          connectorId={presetConnector ?? undefined}
+          onBack={purpose === "security_data_storage" ? () => { setPurpose(null); setEngine(null); } : () => setEngine(null)}
+          backLabel={purpose === "security_data_storage" ? "Change what this database is for" : "Choose a different database type"}
+          onSaved={(id) => {
             onClose();
-            toast("success", "Connection saved", "Credentials stored encrypted.");
-            // A security database goes straight into test → prepare → continue.
-            if (id && purpose === "security_data_storage") onCreated(id);
-          } catch (err) {
-            toast("error", "Could not save connection", err instanceof Error ? err.message : "Request failed");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        {purpose === "security_data_storage" ? (
-          <button type="button" onClick={() => { setPurpose(null); setEngine(null); }} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200">
-            <ArrowLeft size={14} /> Change what this database is for
-          </button>
-        ) : (
-          <button type="button" onClick={() => setEngine(null)} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200">
-            <ArrowLeft size={14} /> Choose a different database type
-          </button>
-        )}
-        <input type="hidden" name="db_type" value={engine.value} />
-        {/* One column on phones (two cramped host/database values); two from sm up. */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label className="label">Name</label>
-            <input name="name" className="input" placeholder="SecureGraph Store" required />
-          </div>
-          {engine.value === "postgresql" && (
-            <div className="sm:col-span-2">
-              <p className="label">How does SecureGraph reach this database?</p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {([
-                  ["direct", "Directly", "It has a public endpoint, such as Neon or Supabase."],
-                  ["connector", "Through a connector", "It is on a private network. Nothing is opened inbound."],
-                ] as const).map(([v, label, desc]) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setVia(v)}
-                    aria-pressed={via === v}
-                    className={cx("rounded-md border p-3 text-left transition-colors", via === v ? "border-gold-400/60 bg-gold-400/[0.06]" : "border-phantix-700/50 hover:border-phantix-500/50")}
-                  >
-                    <p className="text-sm font-semibold text-slate-100">{label}</p>
-                    <p className="mt-0.5 text-[12px] text-slate-400">{desc}</p>
-                  </button>
-                ))}
-              </div>
-              {via === "connector" && (
-                usable.length ? (
-                  <select className="input mt-2" value={connectorId} onChange={(e) => setConnectorId(e.target.value)} required>
-                    <option value="">Choose a connector</option>
-                    {usable.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}{c.status === "online" ? " (online)" : ` (${c.status})`}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <p className="mt-2 text-[13px] text-severity-medium">No connectors yet. Close this and use Add connector under Connectors first.</p>
-                )
-              )}
-            </div>
-          )}
-          <div>
-            <label className="label">{via === "connector" && engine.value === "postgresql" ? "Host, as the connector sees it" : "Host"}</label>
-            <input name="host" className="input font-mono" placeholder={via === "connector" && engine.value === "postgresql" ? "10.0.3.12 or db.internal" : "10.20.0.14 or db.example.com"} required />
-            {resolvingHost && <p className="text-[12px] text-phantix-400 mt-1 animate-pulse-soft">Resolving {resolvingHost} → IPv4...</p>}
-            <p className="text-[12px] text-slate-500 mt-0.5">
-              {via === "connector" && engine.value === "postgresql"
-                ? "The connector connects to this address on your network. It must be in the connector's SG_ALLOWED_TARGETS."
-                : "DNS resolves hostnames to IPv4 automatically before the connection starts"}
-            </p>
-          </div>
-          <div>
-            <label className="label">Port</label>
-            <input name="port" type="number" className="input font-mono" placeholder={String(engine.port)} required />
-          </div>
-          <div>
-            <label className="label">Database</label>
-            <input name="database_name" className="input font-mono" placeholder="phantix_security" required />
-          </div>
-          <div>
-            <label className="label">Target schema</label>
-            <input name="target_schema" className="input font-mono" placeholder="phantix" />
-          </div>
-          <div>
-            <label className="label">Username</label>
-            <input name="username" className="input font-mono" placeholder="phantix_writer" required />
-          </div>
-          <div>
-            <label className="label">Password</label>
-            <input name="password" type="password" className="input" placeholder="••••••••" required />
-          </div>
-          <div>
-            <label className="label">SSL mode</label>
-            <select name="ssl_mode" className="input">
-              <option value="prefer">prefer</option>
-              <option value="require">require</option>
-              <option value="disable">disable</option>
-            </select>
-          </div>
-          <div>
-            <label className="label">Environment</label>
-            <select name="environment" className="input">
-              <option value="production">production</option>
-              <option value="staging">staging</option>
-              <option value="development">development</option>
-            </select>
-          </div>
-        </div>
-        <div className="rounded-md border border-phantix-700/50 bg-phantix-950/50 p-3.5 text-xs leading-5 text-slate-500">
-          Least privilege: SecureGraph only needs access to its own dedicated schema, never your application
-          tables.
-        </div>
-        <button className="btn-primary w-full" disabled={busy}>{resolvingHost ? "Resolving DNS..." : busy ? "Saving..." : "Save connection"}</button>
-      </form>
+            // A security database goes straight into test → prepare.
+            if (id && purpose === "security_data_storage") onSecurityDbCreated(id);
+          }}
+        />
       )}
     </Modal>
   );

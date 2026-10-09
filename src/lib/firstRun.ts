@@ -10,9 +10,9 @@ type StoreState = ReturnType<typeof useStore>["state"];
 
 export const SERVICE_KEY_STEP = "/get-started/service-key";
 export const AUDIT_CONTROL_STEP = "/users?onboarding=1";
-// `from=quick-scan` makes the database page offer "Back to your Quick Scan" once
-// connected, so the scan results can be saved.
-export const SECURITY_DB_STEP = "/connections?from=quick-scan";
+// The guided database journey. `from=quick-scan` makes its last step offer
+// "Back to your Quick Scan", so the scan results can be saved.
+export const SECURITY_DB_STEP = "/connections/new?from=quick-scan";
 // After the Quick Scan results are saved: verify the domain (active testing
 // needs it), choose a billing plan (production only: the plan decides which
 // applications can be switched on), choose the applications (Core and Attack

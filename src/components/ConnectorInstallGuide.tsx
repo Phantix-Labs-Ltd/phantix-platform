@@ -196,8 +196,8 @@ export default function ConnectorInstallGuide({
 
       <Section n={5} title="Add the database through the connector">
         <p className="text-[13px] text-slate-400">
-          Choose Add connection, then <span className="font-medium text-slate-200">Through a connector</span>, pick this connector,
-          and enter the same host and port. SecureGraph tests the connection and prepares its schema through the connector.
+          Once it is online, select <span className="font-medium text-slate-200">Add the database</span> and enter the same host
+          and port. SecureGraph tests the connection and prepares its schema through the connector.
         </p>
       </Section>
 
