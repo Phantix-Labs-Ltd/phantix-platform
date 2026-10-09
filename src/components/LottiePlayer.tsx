@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import lottie, { AnimationItem } from "lottie-web/build/player/lottie_svg";
+import type { AnimationItem } from "lottie-web/build/player/lottie_light";
 
 interface LottiePlayerProps {
   /** Absolute or relative URL of the Lottie JSON, e.g. "/animations/globe.json". */
@@ -29,20 +29,29 @@ export default function LottiePlayer({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const anim = lottie.loadAnimation({
-      container: el,
-      renderer: "svg",
-      loop,
-      autoplay,
-      path: src,
+    let cancelled = false;
+    // The player is decorative, so it loads with the first animation that
+    // mounts instead of riding in the first-paint bundle (which has a 600 KB
+    // budget). The light build has no After Effects expression engine, which
+    // runs expressions through eval(), blocked by the CSP anyway.
+    void import("lottie-web/build/player/lottie_light").then(({ default: lottie }) => {
+      if (cancelled) return;
+      const anim = lottie.loadAnimation({
+        container: el,
+        renderer: "svg",
+        loop,
+        autoplay,
+        path: src,
+      });
+      anim.setSpeed(speed);
+      if (onComplete) {
+        anim.addEventListener("complete", () => onComplete());
+      }
+      animRef.current = anim;
     });
-    anim.setSpeed(speed);
-    if (onComplete) {
-      anim.addEventListener("complete", () => onComplete());
-    }
-    animRef.current = anim;
     return () => {
-      anim.destroy();
+      cancelled = true;
+      animRef.current?.destroy();
       animRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
