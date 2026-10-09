@@ -479,7 +479,11 @@ export default function Billing() {
             // Same copy as the setup wizard's plan step; the live catalog wins.
             const choice = PLAN_CHOICES.find((c) => c.key === key);
             const tagline = choice?.tagline ?? (key === "enterprise" ? "Custom terms, volumes and support." : null);
-            const features = (plan?.features?.length ? plan.features : choice?.features ?? featureList).slice(0, 4);
+            // The plan catalog lists feature keys (``full_engine``); people read
+            // the plan step's wording, or the key turned into words.
+            const live = plan?.features ?? [];
+            const keysOnly = live.length > 0 && live.every((f) => /^[a-z0-9_]+$/.test(f));
+            const features = (keysOnly ? choice?.features ?? live.map(humanize) : live.length ? live : choice?.features ?? featureList).slice(0, 4);
             const popular = Boolean(choice?.highlight) && !isActive;
             return (
               <div
