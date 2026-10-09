@@ -2118,7 +2118,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return { url, emailed: true, email: user?.email ?? "" };
       }
       // App login requires an active service key (per backend enforcement)
-      if (!state.serviceKey) {
+      if (!state.serviceKey?.active) {
         throw new Error(
           "App access requires an active service key. " +
           "Go to Identity and Keys and create a service key before you issue login links.",
@@ -2141,7 +2141,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }));
       return { url, emailed: Boolean(res?.email_sent), email: res?.user_email ?? user?.email ?? "", message: res?.message };
     },
-    [persist, state.users, state.org.slug, state.dualControl.configured],
+    [persist, state.users, state.org.slug, state.dualControl.configured, state.serviceKey],
   );
 
   const clearDevice = useCallback(

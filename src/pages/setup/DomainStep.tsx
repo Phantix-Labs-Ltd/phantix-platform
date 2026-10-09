@@ -42,20 +42,22 @@ export default function DomainStep() {
           <h1 className="mt-1 flex items-center gap-2.5 font-display text-xl font-bold text-white">
             <Globe size={20} className="text-gold-400" /> Verify your domain
           </h1>
-          <p className="mt-2 text-sm leading-relaxed text-slate-400">
-            Active testing, such as VAPT, only runs against domains you have proven you own. Add a DNS record, or publish
-            a small file, then check. A verified domain covers all of its subdomains.
+          <p className="mt-2 text-sm leading-relaxed text-slate-300">
+            Active testing, such as VAPT, only runs on domains you have proven you own. Start with your company
+            domain: add one DNS record at your DNS provider, then verify. Once it is verified, you can add and verify
+            more domains, one at a time.
           </p>
         </div>
 
-        <VerifiedDomainsCard prefill={prefill} onVerifiedChange={onVerifiedChange} />
+        <VerifiedDomainsCard prefill={prefill} onVerifiedChange={onVerifiedChange} verifyLabel />
 
         <div className="card mt-4 p-5">
           {verified > 0 ? (
             <>
               <p className="flex items-center gap-2 text-sm text-emerald-300">
-                <ShieldCheck size={15} /> {verified === 1 ? "1 domain is" : `${verified} domains are`} verified. Active testing is unlocked.
+                <ShieldCheck size={15} /> {verified === 1 ? "1 domain is" : `${verified} domains are`} verified. Active testing is unlocked for {verified === 1 ? "it" : "them"}.
               </p>
+              <p className="mt-1.5 text-[13px] text-slate-400">Have more domains? Use "Add another domain" above to verify each one before you continue.</p>
               <button type="button" onClick={() => navigate(APPLICATIONS_STEP)} className="btn-primary mt-4 w-full !py-3">
                 Continue: choose your applications <ArrowRight size={15} />
               </button>
@@ -66,8 +68,8 @@ export default function DomainStep() {
                 DNS changes can take a few minutes. You can continue now and finish verifying later from Identity, but
                 VAPT stays locked until a domain is verified.
               </p>
-              <button type="button" onClick={() => navigate(APPLICATIONS_STEP)} className="btn-secondary mt-4 w-full !py-3">
-                Verify later and continue <ArrowRight size={15} />
+              <button type="button" onClick={() => navigate(APPLICATIONS_STEP)} className="mt-3 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300">
+                Verify later and continue <ArrowRight size={14} />
               </button>
             </>
           )}

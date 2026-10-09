@@ -25,8 +25,8 @@ export default function ChangePassword() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (next.length < 8) {
-      setError("New password must be at least 8 characters.");
+    if (next.length < 12) {
+      setError("New password must be at least 12 characters.");
       return;
     }
     if (next !== confirm) {
@@ -95,7 +95,7 @@ export default function ChangePassword() {
                 className="input"
                 value={next}
                 onChange={(e) => setNext(e.target.value)}
-                placeholder="At least 8 characters"
+                placeholder="At least 12 characters"
                 autoComplete="new-password"
               />
             </div>

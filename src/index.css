@@ -312,6 +312,11 @@
     border-color: rgb(228 228 231);
     color: rgb(24 24 27);
   }
+  :root[data-theme="light"] .btn-alt {
+    background-color: rgb(240 249 255);
+    border-color: rgb(125 211 252);
+    color: rgb(3 105 161);
+  }
   :root[data-theme="light"] .btn-ghost:hover {
     background-color: rgb(242 242 242);
   }
@@ -460,6 +465,12 @@ p {
   .btn-secondary {
     @apply btn bg-phantix-900 text-slate-200 border border-phantix-700
       hover:bg-phantix-850 hover:border-phantix-600 active:scale-[0.98];
+  }
+
+  /* A second action beside btn-primary, in a colour of its own. */
+  .btn-alt {
+    @apply btn bg-sky-400/10 text-sky-300 border border-sky-400/40
+      hover:bg-sky-400/20 hover:border-sky-400/60 active:scale-[0.98];
   }
 
   .btn-ghost {

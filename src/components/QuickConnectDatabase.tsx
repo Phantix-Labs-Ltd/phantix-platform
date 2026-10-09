@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { CheckCircle2, Database, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle2, Database, ExternalLink, Loader2, PenLine } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { cx } from "@/lib/utils";
@@ -175,8 +175,8 @@ export default function QuickConnectDatabase({ guard, onManual }: { guard: () =>
             {busy ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
             {busy === "saving" ? "Saving..." : busy === "testing" ? "Testing and preparing..." : "Connect"}
           </button>
-          <button type="button" onClick={onManual} className="text-sm text-slate-400 hover:text-slate-200">
-            Enter details manually
+          <button type="button" onClick={onManual} className="btn-alt">
+            <PenLine size={15} /> Enter details manually
           </button>
         </div>
         <p className="text-[12px] text-slate-500">Credentials are stored encrypted. SecureGraph only writes to its own schema.</p>
