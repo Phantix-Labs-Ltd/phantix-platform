@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, Plus, ShieldCheck, AlertTriangle, Loader2, Trash2, Zap, Info, ArrowLeft, ArrowRight } from "lucide-react";
+import { Database, Plus, ShieldCheck, AlertTriangle, Loader2, Trash2, Zap, Info, ArrowLeft, ArrowRight, Cloud, Network } from "lucide-react";
 import DocLink from "@/components/DocLink";
 import QuickConnectDatabase from "@/components/QuickConnectDatabase";
 import SecurityDbSetupModal from "@/components/SecurityDbSetupModal";
+import ConnectorsCard from "@/components/ConnectorsCard";
+import ConnectorInstallGuide from "@/components/ConnectorInstallGuide";
+import { listConnectors, type Connector } from "@/lib/connectors";
 import { PageHeader, Card, CollapsibleCard, StatusBadge, Modal, EmptyState } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { api, DEMO_MODE } from "@/lib/api";
@@ -18,6 +21,24 @@ export default function Connections() {
   const [createOpen, setCreateOpen] = useState(false);
   // A security database just added: walk through test → prepare → continue.
   const [setupId, setSetupId] = useState<number | null>(null);
+  const [connectors, setConnectors] = useState<Connector[]>([]);
+  // Where the database lives decides how SecureGraph reaches it: a hosted
+  // database (public endpoint) connects directly; one on a private network
+  // goes through a SecureGraph Connector.
+  const [where, setWhere] = useState<"hosted" | "private">("hosted");
+  // Connector to preselect when the connection form opens from a connector.
+  const [presetConnector, setPresetConnector] = useState<string | null>(null);
+  React.useEffect(() => {
+    let alive = true;
+    void listConnectors()
+      .then((list) => {
+        if (!alive) return;
+        setConnectors(list);
+        if (list.some((c) => c.status !== "revoked")) setWhere("private");
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [drivers, setDrivers] = useState<{ db_type: string; live: boolean; note?: string }[]>([]);
   const [optionHints, setOptionHints] = useState<any>(null);
@@ -90,8 +111,71 @@ export default function Connections() {
         )}
       </motion.div>
 
-      {!securityDbReady && (
-        <QuickConnectDatabase guard={guard} onManual={async () => { if (await guard()) setCreateOpen(true); }} onCreated={setSetupId} />
+      {/* Where is the database? */}
+      <section aria-labelledby="where-db" className="mb-5">
+        <h2 id="where-db" className="mb-2 text-sm font-semibold text-slate-200">Where is your database?</h2>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="radiogroup">
+          {([
+            ["hosted", Cloud, "Hosted, with a public endpoint", "Neon, Supabase, or a cloud database you can reach over the internet. SecureGraph connects directly."],
+            ["private", Network, "On a private network", "In your data centre, office or private cloud subnet. Install the SecureGraph Connector next to it; nothing is opened inbound."],
+          ] as const).map(([v, Icon, label, desc]) => (
+            <button
+              key={v}
+              type="button"
+              role="radio"
+              aria-checked={where === v}
+              onClick={() => setWhere(v)}
+              className={cx(
+                "flex items-start gap-3 rounded-lg border p-4 text-left transition-colors",
+                where === v ? "border-gold-400/60 bg-gold-400/[0.06]" : "border-phantix-700/50 hover:border-phantix-500/60",
+              )}
+            >
+              <Icon size={18} className={cx("mt-0.5 shrink-0", where === v ? "text-gold-400" : "text-slate-500")} />
+              <span>
+                <span className="block text-sm font-semibold text-white">{label}</span>
+                <span className="mt-0.5 block text-[13px] leading-5 text-slate-400">{desc}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {where === "hosted" ? (
+        !securityDbReady && (
+          <QuickConnectDatabase guard={guard} onManual={async () => { if (await guard()) setCreateOpen(true); }} onCreated={setSetupId} />
+        )
+      ) : (
+        <>
+          <Card className="mb-5">
+            <p className="text-sm font-semibold text-slate-100">Connect a database on a private network</p>
+            <ol className="mt-3 grid grid-cols-1 gap-3 text-[13px] sm:grid-cols-4">
+              {[
+                ["Create a connector", "Name it after where it will run. You get a one-time setup token."],
+                ["Install it", "One Docker command, a Compose service or a Kubernetes manifest, next to the database."],
+                ["Wait for Online", "It connects out to SecureGraph over HTTPS. No inbound port."],
+                ["Add the database", "Choose Through a connector and enter the database address."],
+              ].map(([title, body], i) => (
+                <li key={title} className="rounded-md border border-phantix-700/40 p-3">
+                  <p className="font-medium text-slate-100"><span className="mr-1.5 text-gold-400">{i + 1}.</span>{title}</p>
+                  <p className="mt-1 leading-5 text-slate-400">{body}</p>
+                </li>
+              ))}
+            </ol>
+          </Card>
+          <ConnectorsCard
+            guard={guard}
+            onChange={setConnectors}
+            onAddDatabase={async (id) => { if (await guard()) { setPresetConnector(id); setCreateOpen(true); } }}
+          />
+          <CollapsibleCard
+            className="mb-5"
+            title="Installation procedure"
+            subtitle="Docker, Docker Compose or Kubernetes, with prerequisites and troubleshooting"
+            defaultOpen={false}
+          >
+            <ConnectorInstallGuide />
+          </CollapsibleCard>
+        </>
       )}
 
       {optionHints?.by_db_type && (
@@ -269,7 +353,7 @@ export default function Connections() {
         </CollapsibleCard>
       </motion.div>
 
-      <CreateConnectionModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={setSetupId} />
+      <CreateConnectionModal open={createOpen} onClose={() => { setCreateOpen(false); setPresetConnector(null); }} onCreated={setSetupId} connectors={connectors} presetConnector={presetConnector} />
       <SecurityDbSetupModal connectionId={setupId} onClose={() => setSetupId(null)} />
     </div>
   );
@@ -289,13 +373,29 @@ const ENGINES = [
 ] as const;
 type Engine = (typeof ENGINES)[number];
 
-function CreateConnectionModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (id: number) => void }) {
+function CreateConnectionModal({ open, onClose, onCreated, connectors, presetConnector }: { open: boolean; onClose: () => void; onCreated: (id: number) => void; connectors: Connector[]; presetConnector?: string | null }) {
   const { createConnection, toast, state, requireDualControl, operate } = useStore();
   const [busy, setBusy] = useState(false);
   // Step 1 picks what the database is for, step 2 its type; the details form
   // only shows once both are chosen.
   const [engine, setEngine] = useState<Engine | null>(null);
-  React.useEffect(() => { if (open) { setEngine(null); setPurpose(null); } }, [open]);
+  React.useEffect(() => {
+    if (!open) return;
+    if (presetConnector) {
+      // Opened from a connector: a PostgreSQL security database behind it.
+      setPurpose("security_data_storage");
+      setEngine(ENGINES[0]);
+      setVia("connector");
+      setConnectorId(presetConnector);
+    } else {
+      setEngine(null); setPurpose(null); setVia("direct"); setConnectorId("");
+    }
+  }, [open, presetConnector]);
+  // How SecureGraph reaches the database: directly, or through a connector on
+  // the organization's private network (PostgreSQL only for now).
+  const [via, setVia] = useState<"direct" | "connector">("direct");
+  const [connectorId, setConnectorId] = useState("");
+  const usable = connectors.filter((c) => c.status !== "revoked");
   const [purpose, setPurpose] = useState<Purpose | null>(null);
   const [resolvingHost, setResolvingHost] = useState<string | null>(null);
 
@@ -395,8 +495,15 @@ function CreateConnectionModal({ open, onClose, onCreated }: { open: boolean; on
           const f = new FormData(form);
           setBusy(true);
           try {
+            const throughConnector = via === "connector" && engine?.value === "postgresql";
+            if (throughConnector && !connectorId) {
+              toast("warning", "Choose a connector", "Pick the connector this database is reached through.");
+              setBusy(false);
+              return;
+            }
             let host = String(f.get("host")).trim();
-            host = await resolveHost(host);
+            // A host behind a connector is a private name or address: never look it up publicly.
+            if (!throughConnector) host = await resolveHost(host);
             const id = await createConnection({
               name: String(f.get("name")),
               connection_purpose: purpose,
@@ -409,6 +516,8 @@ function CreateConnectionModal({ open, onClose, onCreated }: { open: boolean; on
               username: String(f.get("username") || ""),
               password: String(f.get("password") || ""),
               ssl_mode: String(f.get("ssl_mode") || "prefer"),
+              network_mode: throughConnector ? "connector" : "direct",
+              connector_id: throughConnector ? connectorId : null,
               environment: String(f.get("environment") || "production"),
             });
             onClose();
@@ -438,11 +547,49 @@ function CreateConnectionModal({ open, onClose, onCreated }: { open: boolean; on
             <label className="label">Name</label>
             <input name="name" className="input" placeholder="SecureGraph Store" required />
           </div>
+          {engine.value === "postgresql" && (
+            <div className="sm:col-span-2">
+              <p className="label">How does SecureGraph reach this database?</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {([
+                  ["direct", "Directly", "It has a public endpoint, such as Neon or Supabase."],
+                  ["connector", "Through a connector", "It is on a private network. Nothing is opened inbound."],
+                ] as const).map(([v, label, desc]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setVia(v)}
+                    aria-pressed={via === v}
+                    className={cx("rounded-md border p-3 text-left transition-colors", via === v ? "border-gold-400/60 bg-gold-400/[0.06]" : "border-phantix-700/50 hover:border-phantix-500/50")}
+                  >
+                    <p className="text-sm font-semibold text-slate-100">{label}</p>
+                    <p className="mt-0.5 text-[12px] text-slate-400">{desc}</p>
+                  </button>
+                ))}
+              </div>
+              {via === "connector" && (
+                usable.length ? (
+                  <select className="input mt-2" value={connectorId} onChange={(e) => setConnectorId(e.target.value)} required>
+                    <option value="">Choose a connector</option>
+                    {usable.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}{c.status === "online" ? " (online)" : ` (${c.status})`}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="mt-2 text-[13px] text-severity-medium">No connectors yet. Close this and use Add connector under Connectors first.</p>
+                )
+              )}
+            </div>
+          )}
           <div>
-            <label className="label">Host</label>
-            <input name="host" className="input font-mono" placeholder="10.20.0.14 or db.example.com" required />
+            <label className="label">{via === "connector" && engine.value === "postgresql" ? "Host, as the connector sees it" : "Host"}</label>
+            <input name="host" className="input font-mono" placeholder={via === "connector" && engine.value === "postgresql" ? "10.0.3.12 or db.internal" : "10.20.0.14 or db.example.com"} required />
             {resolvingHost && <p className="text-[12px] text-phantix-400 mt-1 animate-pulse-soft">Resolving {resolvingHost} → IPv4...</p>}
-            <p className="text-[12px] text-slate-500 mt-0.5">DNS resolves hostnames to IPv4 automatically before the connection starts</p>
+            <p className="text-[12px] text-slate-500 mt-0.5">
+              {via === "connector" && engine.value === "postgresql"
+                ? "The connector connects to this address on your network. It must be in the connector's SG_ALLOWED_TARGETS."
+                : "DNS resolves hostnames to IPv4 automatically before the connection starts"}
+            </p>
           </div>
           <div>
             <label className="label">Port</label>

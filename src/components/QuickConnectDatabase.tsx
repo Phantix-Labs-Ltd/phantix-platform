@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { CheckCircle2, Database, ExternalLink, Loader2, PenLine } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui";
 import { useStore } from "@/lib/store";
+import EgressAllowlist from "@/components/EgressAllowlist";
 import { cx } from "@/lib/utils";
 
 type Provider = "neon" | "supabase" | "other";
@@ -147,6 +148,7 @@ export default function QuickConnectDatabase({ guard, onManual, onCreated }: { g
         )}
         {active.steps.map((s) => <li key={s}>{s}</li>)}
       </ol>
+      {provider !== "other" && <EgressAllowlist provider={provider} />}
 
       <form onSubmit={connect} className="mt-5 space-y-3">
         <div>
