@@ -1,30 +1,33 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { ArrowRight, CheckCircle2, Circle, Clock, Loader2, XCircle } from "lucide-react";
-import { Modal } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { cx } from "@/lib/utils";
 
 type Stage = "test" | "testing" | "bootstrap" | "bootstrapping" | "pending" | "done";
 
 /**
- * Shown right after a security database is added: test the connection, prepare
- * (bootstrap) the security schema, then carry on with setup. Scans, VAPT and
- * saved findings stay blocked until the database is ready, so this walks the
- * user through it instead of leaving them on a table with two buttons.
+ * The last step of connecting a security database: test the connection,
+ * prepare (bootstrap) the security schema, then move on. Scans, VAPT and saved
+ * findings stay blocked until the database is ready, so this walks the user
+ * through it instead of leaving them on a table with two buttons.
  */
-export default function SecurityDbSetupModal({ connectionId, onClose }: { connectionId: number | null; onClose: () => void }) {
+export default function SecurityDbPrepare({ connectionId, finishLabel, onFinish, onLater }: {
+  connectionId: number;
+  finishLabel: string;
+  onFinish: () => void;
+  onLater: () => void;
+}) {
   const { state, testConnection, bootstrapConnection, markMilestone, toast } = useStore();
-  const navigate = useNavigate();
-  const [stage, setStage] = useState<Stage>("test");
-  const [error, setError] = useState<string | null>(null);
   const row = state.connections.find((c) => c.id === connectionId) || null;
   const ready = row?.bootstrap_status === "ready";
-  // During first-run setup, finishing here goes back to the guided steps.
-  const inSetup = !state.setup.setup_complete;
+  // Coming back to a database that is already prepared starts at the end.
+  const [stage, setStage] = useState<Stage>(ready ? "done" : "test");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (connectionId !== null) { setStage("test"); setError(null); }
+    setStage(ready ? "done" : "test");
+    setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectionId]);
 
   // The test also applies the schema when it can (auto_bootstrap), so a
@@ -35,8 +38,6 @@ export default function SecurityDbSetupModal({ connectionId, onClose }: { connec
       void markMilestone("security_db_connected");
     }
   }, [ready, stage, markMilestone]);
-
-  if (connectionId === null) return null;
 
   const runTest = async () => {
     setError(null);
@@ -77,13 +78,8 @@ export default function SecurityDbSetupModal({ connectionId, onClose }: { connec
             : "done";
   const doneState: StepState = stage === "done" ? "current" : "waiting";
 
-  const finish = () => {
-    onClose();
-    if (inSetup) navigate("/get-started");
-  };
-
   return (
-    <Modal open onClose={onClose} title="Finish setting up your security database">
+    <div>
       <p className="text-sm text-slate-400">
         {row ? <><span className="font-medium text-slate-200">{row.name}</span> is saved. </> : "Your database is saved. "}
         Two quick steps make it ready for scans, VAPT and findings.
@@ -95,8 +91,8 @@ export default function SecurityDbSetupModal({ connectionId, onClose }: { connec
         <Step
           n={3}
           state={doneState}
-          title={inSetup ? "Continue setup" : "Done"}
-          body={inSetup ? "Save your Quick Scan results and move on to the next step." : "Scans, VAPT and findings can use it now."}
+          title="Ready"
+          body="Scans, VAPT and findings can use it now."
         />
       </ol>
 
@@ -121,22 +117,17 @@ export default function SecurityDbSetupModal({ connectionId, onClose }: { connec
           </button>
         )}
         {stage === "done" && (
-          <button type="button" className="btn-primary" onClick={finish}>
-            {inSetup ? <>Continue setup <ArrowRight size={15} /></> : "Done"}
-          </button>
-        )}
-        {stage === "pending" && inSetup && (
-          <button type="button" className="btn-secondary" onClick={finish}>
-            Continue setup <ArrowRight size={15} />
+          <button type="button" className="btn-primary" onClick={onFinish}>
+            {finishLabel} <ArrowRight size={15} />
           </button>
         )}
         {stage !== "done" && (
-          <button type="button" className="text-sm text-slate-400 hover:text-slate-200" onClick={onClose}>
+          <button type="button" className="text-sm text-slate-400 hover:text-slate-200" onClick={onLater}>
             Finish later
           </button>
         )}
       </div>
-    </Modal>
+    </div>
   );
 }
 

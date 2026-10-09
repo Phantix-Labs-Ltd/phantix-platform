@@ -528,13 +528,13 @@ type Store = {
   // auth
   /** Slim sign-up (company, email, password). `signedIn` is false only on a
    *  backend that still issues no token at registration. */
-  register: (companyName: string, email: string, password: string) => Promise<RegisterResult>;
+  register: (companyName: string, email: string, password: string, joinBeta?: boolean) => Promise<RegisterResult>;
   /** Start GitHub sign-in / sign-up: resolves to GitHub's authorize URL. */
   githubAuthStart: (intent: "login" | "signup") => Promise<string>;
   /** Finish the GitHub redirect: signs in an existing org, or returns the
    *  sign-up details for a new one. */
   githubAuthCallback: (code: string, state: string) => Promise<GithubAuthResult>;
-  registerWithGithub: (signupToken: string, companyName: string) => Promise<RegisterResult>;
+  registerWithGithub: (signupToken: string, companyName: string, joinBeta?: boolean) => Promise<RegisterResult>;
   login: (email: string, password: string) => Promise<{ mfaRequired: boolean; destinationMasked?: string; mustChangePassword?: boolean; platformAccess?: boolean; role?: string }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   verifyMfa: (code: string) => Promise<void>;
@@ -1051,7 +1051,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [persist, hydrateSession]);
 
   const register = useCallback(
-    async (name: string, email: string, password: string): Promise<RegisterResult> => {
+    async (name: string, email: string, password: string, joinBeta = false): Promise<RegisterResult> => {
       if (DEMO_MODE) {
         await delay(700);
         persist((s) => ({
@@ -1069,7 +1069,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // C1: terms are accepted on the form, the slug is generated server-side,
       // and the response carries a session so there is no second sign-in.
       const res = await api.post<Partial<SessionTokenResponse>>("/organizations/register", {
-        company_name: name, email, password, accept_terms: true,
+        company_name: name, email, password, accept_terms: true, join_beta: joinBeta,
       });
       const emailVerified = Boolean(res?.email_verified);
       if (!res?.access_token) {
@@ -1109,10 +1109,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     };
   }, [startSession]);
 
-  const registerWithGithub = useCallback(async (signupToken: string, companyName: string): Promise<RegisterResult> => {
+  const registerWithGithub = useCallback(async (signupToken: string, companyName: string, joinBeta = false): Promise<RegisterResult> => {
     const res = await api.post<SessionTokenResponse & { organization?: { email?: string } }>(
       "/organizations/register/github",
-      { signup_token: signupToken, company_name: companyName, accept_terms: true },
+      { signup_token: signupToken, company_name: companyName, accept_terms: true, join_beta: joinBeta },
     );
     const email = res.organization?.email || emailFromToken(res.access_token) || "";
     await startSession(res, email);
