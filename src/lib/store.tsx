@@ -946,7 +946,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         connections,
         serviceKey: serviceKey ?? s.serviceKey,
         users: users.length ? users : s.users,
-        dualControl: dualControl.configured ? dualControl : s.dualControl,
+        // Take the server's answer whenever it gave one. Keeping the old state
+        // when nobody is assigned lost policy_mode "off", so a solo-mode
+        // organization was told to set up audit control on every change.
+        dualControl: dcRes && typeof dcRes === "object" ? dualControl : s.dualControl,
         identity,
         loginLinks,
         companies: companies.length ? companies : s.companies,

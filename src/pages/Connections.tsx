@@ -99,7 +99,7 @@ export default function Connections() {
         {securityDbReady ? <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-400" /> : <AlertTriangle size={16} className="mt-0.5 shrink-0 text-severity-medium" />}
         <p className="text-xs leading-5 text-slate-400">
           {securityDbReady ? (
-            <><strong className="text-emerald-300">Bootstrap gate: ready.</strong> The primary security store is connected --- scans, VAPT and findings are unblocked.</>
+            <><strong className="text-emerald-300">Bootstrap gate: ready.</strong> The primary security store is connected. Scans, VAPT and findings are unblocked.</>
           ) : (
             <><strong className="text-severity-medium">Not connected yet.</strong> Full scans, VAPT and saved findings need a security database. Quick Scans work without one.</>
           )}
