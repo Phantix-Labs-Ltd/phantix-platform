@@ -8,7 +8,8 @@ import { api, DEMO_MODE } from "@/lib/api";
 import { useStore } from "@/lib/store";
 import { formatNaira, timeAgo, cx, humanize } from "@/lib/utils";
 import { UPSELL_FEATURES, upsellFor, upsellPlanLabel } from "@/lib/upsell";
-import { readPlanChoice } from "@/lib/planChoice";
+import { PLAN_CHOICES, readPlanChoice } from "@/lib/planChoice";
+import { PENDING_PAYMENT_KEY, startPlanCheckout } from "@/lib/billingCheckout";
 
 interface Entitlements {
   billing_enforcement: { enabled: boolean; mode: string; environment: string; free_asset_cap?: number; free_org_user_cap?: number; free_report_formats?: string[] };
@@ -47,8 +48,6 @@ interface CreditBalance {
   top_up_required?: boolean;
   bundles: CreditBundle[];
 }
-
-const PENDING_PAYMENT_KEY = "phantix_pending_payment_id";
 
 const demoEntitlements: Entitlements = { billing_enforcement: { enabled: true, mode: "auto", environment: "production" }, premium_active: false, full_access_coupon: null, subscription: null, packs: [], message: "Dev mode" };
 const demoPricing: PricingInfo = { monthly_list_price_ngn: 9900, first_month_price_ngn: 4950, subsequent_monthly_price_ngn: 9900, yearly_price_ngn: 99000, first_month_discount_percent: 50 };
@@ -215,22 +214,15 @@ export default function Billing() {
     if (!(await requireDualControl("Subscribing requires a dual-control operate session."))) return;
     setBusy(true);
     try {
-      const res = await api.post<any>(
-        "/billing/subscribe",
-        { billing_cycle: selectedCycle, plan: planOverride ?? selectedPlan },
-        { dualControl: true },
-      );
-      const paymentId = res?.payment?.id;
-      if (paymentId) {
-        setPayingId(paymentId);
-        try { sessionStorage.setItem(PENDING_PAYMENT_KEY, String(paymentId)); } catch { /* ignore */ }
-        const initRes = await api.post<any>(`/billing/payments/${paymentId}/initialize`, {
-          email: session?.email || state.org.email || "",
-          callback_url: `${window.location.origin}/billing`,
-          ...(gatewayPublicKey ? {} : {}),
-        }, { dualControl: true });
-        if (initRes?.authorization_url) window.location.href = initRes.authorization_url;
-        else toast("info", "Paystack", `Access code: ${initRes?.access_code ?? "Not available"}. Complete the payment, then click Verify below`);
+      const res = await startPlanCheckout({
+        plan: planOverride ?? selectedPlan,
+        cycle: selectedCycle,
+        email: session?.email || state.org.email || "",
+        returnPath: "/billing",
+      });
+      if (res.paymentId) setPayingId(res.paymentId);
+      if (res.paymentId && !res.redirected) {
+        toast("info", "Paystack", `Access code: ${res.accessCode ?? "Not available"}. Complete the payment, then click Verify below`);
       }
     } catch (e) { toast("error", "Subscribe failed", e instanceof Error ? e.message : ""); }
     finally { setBusy(false); }
@@ -279,7 +271,7 @@ export default function Billing() {
 
   if (loading) {
     return (
-      <div>
+      <div className="mx-auto w-full max-w-5xl">
         <PageHeaderSkeleton actions />
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <div className="skeleton h-6 w-28 rounded-full" />
@@ -361,7 +353,9 @@ export default function Billing() {
   ];
 
   return (
-    <div>
+    // Capped width: on a wide screen the plan cards and strips would otherwise
+    // stretch far past their content.
+    <div className="mx-auto w-full max-w-5xl">
       <PageHeader
         title="Billing"
         description="Manage your SecureGraph subscription, payments, and access"
@@ -473,7 +467,7 @@ export default function Billing() {
                   selectedCycle === c ? "bg-gold-400/15 text-gold-300" : "text-slate-400 hover:text-slate-200",
                 )}
               >
-                {c === "monthly" ? "Monthly" : "Yearly"}
+                {c === "monthly" ? "Monthly" : "Yearly · 2 months free"}
               </button>
             ))}
           </div>
@@ -482,52 +476,61 @@ export default function Billing() {
           {tierCards.map(({ key, plan, purchasable }) => {
             const isActive = isPremium ? planKey === key : key === "free";
             const price = purchasable ? tierPricing(key, plan) : null;
-            const features = (plan?.features?.length ? plan.features : key === "free" ? featureList : key === "growth" ? growthPlan?.features ?? featureList : featureList).slice(0, 4);
+            // Same copy as the setup wizard's plan step; the live catalog wins.
+            const choice = PLAN_CHOICES.find((c) => c.key === key);
+            const tagline = choice?.tagline ?? (key === "enterprise" ? "Custom terms, volumes and support." : null);
+            const features = (plan?.features?.length ? plan.features : choice?.features ?? featureList).slice(0, 4);
+            const popular = Boolean(choice?.highlight) && !isActive;
             return (
               <div
                 key={key}
                 className={cx(
-                  "flex flex-col rounded-md border px-4 py-4",
-                  isActive ? "border-gold-400/50 bg-gold-400/[0.04]" : "border-phantix-700/40",
+                  "relative flex flex-col rounded-lg border p-5",
+                  isActive ? "border-gold-400/60 bg-gold-400/[0.05]" : popular ? "border-gold-400/30" : "border-phantix-700/50",
                 )}
               >
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-slate-100">{plan?.name ?? humanize(key)}</p>
-                  {isActive && <span className="chip !px-1.5 !py-0.5 text-[11px] border-gold-400/40 text-gold-300">Current</span>}
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-display text-base font-semibold text-white">{plan?.name ?? humanize(key)}</p>
+                  {isActive ? (
+                    <span className="chip !px-1.5 !py-0.5 text-[11px] border-gold-400/40 text-gold-300">Current</span>
+                  ) : popular ? (
+                    <span className="chip !px-1.5 !py-0.5 text-[11px] border-gold-400/30 bg-gold-400/10 text-gold-300">Popular</span>
+                  ) : null}
                 </div>
-                <div className="mt-2">
+                <div className="mt-3">
                   {key === "free" ? (
-                    <p className="font-display text-lg font-bold text-white">Free</p>
+                    <p className="font-display text-2xl font-bold text-white">Free</p>
                   ) : key === "enterprise" ? (
-                    <p className="font-display text-lg font-bold text-white">Custom</p>
+                    <p className="font-display text-2xl font-bold text-white">Custom</p>
                   ) : price ? (
                     <>
-                      <p className="font-display text-lg font-bold text-white">{formatNaira(price.monthly)}<span className="text-xs font-normal text-slate-500">/mo</span></p>
-                      <p className="mt-0.5 text-[11px] text-slate-500">{price.note}</p>
+                      <p className="font-display text-2xl font-bold text-white">{formatNaira(price.monthly)}<span className="ml-0.5 text-[13px] font-normal text-slate-400">/mo</span></p>
+                      <p className="mt-0.5 text-[12px] text-slate-400">{price.note}</p>
                     </>
                   ) : (
-                    <p className="font-display text-lg font-bold text-slate-500">Not set</p>
+                    <p className="font-display text-2xl font-bold text-slate-500">Not set</p>
                   )}
                 </div>
-                <ul className="mt-3 flex-1 space-y-1.5">
+                {tagline && <p className="mt-2 text-[13px] leading-5 text-slate-300">{tagline}</p>}
+                <ul className="mt-4 flex-1 space-y-2 border-t border-phantix-700/40 pt-4">
                   {features.map((f) => (
-                    <li key={f} className="flex items-start gap-1.5 text-[12px] leading-5 text-slate-400">
-                      <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-emerald-400/80" /> {f}
+                    <li key={f} className="flex items-start gap-2 text-[13px] leading-5 text-slate-300">
+                      <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-400/80" /> {f}
                     </li>
                   ))}
                 </ul>
-                <div className="mt-3">
+                <div className="mt-5">
                   {key === "enterprise" ? (
-                    <a href="/support" className="btn-secondary block w-full !py-1.5 text-center text-xs">Contact sales</a>
+                    <a href="/support" className="btn-secondary block w-full !py-2 text-center text-[13px]">Contact sales</a>
                   ) : key === "free" ? (
-                    <button disabled className="btn-ghost w-full !py-1.5 text-xs opacity-60">{isActive ? "Current plan" : "Included"}</button>
+                    <button disabled className="btn-ghost w-full !py-2 text-[13px] opacity-60">{isActive ? "Current plan" : "Included"}</button>
                   ) : isActive ? (
-                    <button disabled className="btn-ghost w-full !py-1.5 text-xs opacity-60">Current plan</button>
+                    <button disabled className="btn-ghost w-full !py-2 text-[13px] opacity-60">Current plan</button>
                   ) : (
                     <button
                       onClick={() => { setSelectedPlan(key as "starter" | "growth"); void handleSubscribe(key as "starter" | "growth"); }}
                       disabled={busy}
-                      className="btn-primary w-full !py-1.5 text-xs"
+                      className="btn-primary w-full !py-2 text-[13px]"
                     >
                       {busy && selectedPlan === key ? <Spinner className="h-3.5 w-3.5" /> : <><CreditCard size={12} /> {isPremium ? "Switch" : "Subscribe"}</>}
                     </button>
