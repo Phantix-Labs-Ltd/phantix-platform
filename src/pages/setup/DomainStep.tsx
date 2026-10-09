@@ -2,7 +2,7 @@ import React, { useCallback, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowRight, CheckCircle2, Globe, ShieldCheck } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { APPLICATIONS_STEP } from "@/lib/firstRun";
+import { PLAN_STEP } from "@/lib/firstRun";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import VerifiedDomainsCard from "@/components/VerifiedDomainsCard";
@@ -58,8 +58,8 @@ export default function DomainStep() {
                 <ShieldCheck size={15} /> {verified === 1 ? "1 domain is" : `${verified} domains are`} verified. Active testing is unlocked for {verified === 1 ? "it" : "them"}.
               </p>
               <p className="mt-1.5 text-[13px] text-slate-400">Have more domains? Use "Add another domain" above to verify each one before you continue.</p>
-              <button type="button" onClick={() => navigate(APPLICATIONS_STEP)} className="btn-primary mt-4 w-full !py-3">
-                Continue: choose your applications <ArrowRight size={15} />
+              <button type="button" onClick={() => navigate(PLAN_STEP)} className="btn-primary mt-4 w-full !py-3">
+                Continue <ArrowRight size={15} />
               </button>
             </>
           ) : (
@@ -68,7 +68,7 @@ export default function DomainStep() {
                 DNS changes can take a few minutes. You can continue now and finish verifying later from Identity, but
                 VAPT stays locked until a domain is verified.
               </p>
-              <button type="button" onClick={() => navigate(APPLICATIONS_STEP)} className="mt-3 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300">
+              <button type="button" onClick={() => navigate(PLAN_STEP)} className="mt-3 inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300">
                 Verify later and continue <ArrowRight size={14} />
               </button>
             </>
