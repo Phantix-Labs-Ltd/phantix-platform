@@ -43,6 +43,7 @@ const Alerts = React.lazy(() => import("@/pages/Alerts"));
 const Integrations = React.lazy(() => import("@/pages/Integrations"));
 const Sandbox = React.lazy(() => import("@/pages/Sandbox"));
 const GetStarted = React.lazy(() => import("@/pages/setup/GetStarted"));
+const ApprovalsStep = React.lazy(() => import("@/pages/setup/ApprovalsStep"));
 const ServiceKeyStep = React.lazy(() => import("@/pages/setup/ServiceKeyStep"));
 const AppAccessStep = React.lazy(() => import("@/pages/setup/AppAccessStep"));
 const DomainStep = React.lazy(() => import("@/pages/setup/DomainStep"));
@@ -146,6 +147,7 @@ export default function App() {
             <Route path="/reset-password" element={<PasswordResetComplete />} />
             <Route path="/setup" element={<SetupRoute />} />
             <Route path="/get-started" element={<RequireManagement><GetStarted /></RequireManagement>} />
+            <Route path="/get-started/approvals" element={<RequireManagement><ApprovalsStep /></RequireManagement>} />
             <Route path="/get-started/service-key" element={<RequireManagement><ServiceKeyStep /></RequireManagement>} />
             <Route path="/get-started/verify-domain" element={<RequireManagement><DomainStep /></RequireManagement>} />
             <Route path="/get-started/plan" element={<RequireManagement><PlanStep /></RequireManagement>} />

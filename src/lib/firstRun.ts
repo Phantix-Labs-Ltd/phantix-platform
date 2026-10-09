@@ -1,5 +1,6 @@
 // First-run order after the Quick Scan:
-//   People and audit control (dual control on only) → service key → security database.
+//   Approvals (solo mode or dual control) → people and audit control (dual
+//   control only) → service key → security database.
 // The security database page refuses changes until audit control is set when dual
 // control is on (solo mode has no audit controller to assign), and the
 // applications need the org's service key, so the steps run in that order.
@@ -8,8 +9,12 @@ import type { useStore } from "./store";
 
 type StoreState = ReturnType<typeof useStore>["state"];
 
+export const APPROVALS_STEP = "/get-started/approvals";
 export const SERVICE_KEY_STEP = "/get-started/service-key";
 export const AUDIT_CONTROL_STEP = "/users?onboarding=1";
+// Dual control chosen with nobody to approve yet: add the second person and
+// assign the roles; People then turns dual control on.
+export const ENABLE_DUAL_CONTROL_STEP = "/users?onboarding=1&enable=dual";
 // The guided database journey. `from=quick-scan` makes its last step offer
 // "Back to your Quick Scan", so the scan results can be saved.
 export const SECURITY_DB_STEP = "/connections/new?from=quick-scan";
@@ -33,8 +38,14 @@ export function needsAuditControl(state: StoreState): boolean {
   return state.dualControl.policy_mode !== "off" && !state.dualControl.configured;
 }
 
-/** Where the first run goes next once the Quick Scan is done. */
-export function nextAfterQuickScan(state: StoreState): string {
+/** Where the first run goes next once the Quick Scan is done: choose how
+ *  changes are approved first. */
+export function nextAfterQuickScan(_state: StoreState): string {
+  return APPROVALS_STEP;
+}
+
+/** Where the first run goes once the approvals choice is made. */
+export function nextAfterApprovals(state: StoreState): string {
   if (needsAuditControl(state)) return AUDIT_CONTROL_STEP;
   if (!state.serviceKey?.active) return SERVICE_KEY_STEP;
   return SECURITY_DB_STEP;
@@ -42,6 +53,7 @@ export function nextAfterQuickScan(state: StoreState): string {
 
 /** Button label for that next step. */
 export function nextStepLabel(path: string): string {
+  if (path === APPROVALS_STEP) return "Continue setup";
   if (path === AUDIT_CONTROL_STEP) return "Set up audit control";
   if (path === SERVICE_KEY_STEP) return "Create service key";
   return "Connect a database";

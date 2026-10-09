@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import { Clock, Loader2, ShieldCheck, Users } from "lucide-react";
 import { Card, CardHeader } from "@/components/ui";
 import { useStore } from "@/lib/store";
-import { api, DEMO_MODE, delay, errorCode } from "@/lib/api";
+import { errorCode } from "@/lib/api";
+import { loadDualControlPolicy, setDualControlPolicy, type DualControlPolicy, type PolicyMode } from "@/lib/dualControlPolicy";
 import { cx } from "@/lib/utils";
 
-type Mode = "off" | "on" | "enforced";
-type Policy = { mode: Mode; can_disable: boolean; pending_change: { mode?: Mode; requested_at?: string } | null };
+type Mode = PolicyMode;
+type Policy = DualControlPolicy;
 
 /**
  * Dual control is opt-in. Solo mode (off) lets one person act, with a code for
@@ -21,22 +22,15 @@ export default function DualControlPolicyCard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async () => {
-    if (DEMO_MODE) { setPolicy({ mode: state.dualControl.policy_mode ?? "off", can_disable: true, pending_change: null }); return; }
-    try {
-      setPolicy(await api.get<Policy>("/organizations/me/dual-control-policy"));
-    } catch {
-      setPolicy(null); // backend without the policy: hide the card
-    }
-  };
+  // A backend without the policy returns null: the card hides.
+  const load = async () => setPolicy(await loadDualControlPolicy(state.dualControl.policy_mode ?? "off"));
   useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
 
   const change = async (mode: Mode) => {
     setBusy(true);
     setError(null);
     try {
-      if (DEMO_MODE) { await delay(400); setPolicy({ mode, can_disable: true, pending_change: null }); return; }
-      const next = await api.put<Policy>("/organizations/me/dual-control-policy", { mode });
+      const next = await setDualControlPolicy(mode);
       setPolicy(next);
       if (next.pending_change) toast("info", "Sent to your authorizer", "Dual control stays on until they approve.");
       else toast("success", mode === "off" ? "Solo mode on" : "Dual control on");
