@@ -15,6 +15,7 @@ import { cx } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationBell } from "@/components/Notifications";
 import SandboxBanner from "@/components/SandboxBanner";
+import PageErrorBoundary from "@/components/PageErrorBoundary";
 import { loadSandboxMe } from "@/lib/sandbox";
 import { RouteSkeleton } from "@/components/RouteSkeleton";
 import { BrandMark, BrandWordmark } from "@/components/BrandLogo";
@@ -252,8 +253,15 @@ export default function Layout() {
     return () => window.removeEventListener("phantix:billing-required", handler);
   }, [toast]);
 
-  if (location.pathname.startsWith("/setup")) return <Outlet />;
-  if (!session?.authenticated) return <Outlet />;
+  // Setup and signed-out pages render without the chrome; a crash there still
+  // gets a recovery card instead of a blank screen.
+  if (location.pathname.startsWith("/setup") || !session?.authenticated) {
+    return (
+      <PageErrorBoundary fullScreen resetKey={location.pathname}>
+        <Outlet />
+      </PageErrorBoundary>
+    );
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -512,9 +520,12 @@ export default function Layout() {
           <div className="mx-auto w-full min-w-0 max-w-[1600px]">
             {session?.authenticated && <SandboxBanner />}
             {/* Switching pages keeps the chrome and animates only the content. */}
-            <React.Suspense fallback={<RouteSkeleton />}>
-              <Outlet />
-            </React.Suspense>
+            {/* A page that crashes shows a recovery card; the chrome stays. */}
+            <PageErrorBoundary resetKey={location.pathname}>
+              <React.Suspense fallback={<RouteSkeleton />}>
+                <Outlet />
+              </React.Suspense>
+            </PageErrorBoundary>
           </div>
         </main>
 
