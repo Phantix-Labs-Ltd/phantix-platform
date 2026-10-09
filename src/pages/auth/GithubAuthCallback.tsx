@@ -4,6 +4,8 @@ import { ArrowRight, Github, Loader2 } from "lucide-react";
 import { useStore, type GithubAuthResult } from "@/lib/store";
 import { BrandWordmark } from "@/components/BrandLogo";
 import { errorCode } from "@/lib/api";
+import { BetaBanner, BetaOptIn, RegistrationClosed } from "@/components/BetaSignup";
+import { useSignupStatus } from "@/lib/betaSignup";
 
 type Signup = Extract<GithubAuthResult, { kind: "signup" }>;
 
@@ -16,7 +18,10 @@ export default function GithubAuthCallback() {
   const [signup, setSignup] = useState<Signup | null>(null);
   const [company, setCompany] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [joinBeta, setJoinBeta] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { status, reload: reloadStatus } = useSignupStatus();
+  const beta = status?.phase === "beta";
   const [error, setError] = useState<string | null>(null);
   const started = useRef(false);
 
@@ -46,11 +51,14 @@ export default function GithubAuthCallback() {
     setError(null);
     if (company.trim().length < 2) return setError("Enter your company name");
     if (!accepted) return setError("Accept the terms to continue");
+    if (beta && !joinBeta) return setError("Join the beta sandbox to register during the beta");
     setBusy(true);
     try {
-      await registerWithGithub(signup.signupToken, company.trim());
+      await registerWithGithub(signup.signupToken, company.trim(), beta && joinBeta);
       navigate("/setup", { replace: true });
     } catch (err) {
+      const code = errorCode(err);
+      if (code === "registration_closed" || code === "beta_opt_in_required") reloadStatus();
       setError(err instanceof Error ? err.message : "Could not create your account");
       setBusy(false);
     }
@@ -74,8 +82,12 @@ export default function GithubAuthCallback() {
             </div>
           </>
         )}
-        {signup && (
+        {signup && status?.phase === "closed" && (
+          <div className="mt-6"><RegistrationClosed /></div>
+        )}
+        {signup && status?.phase !== "closed" && (
           <form onSubmit={submit} className="mt-6 space-y-4">
+            {beta && status && <BetaBanner status={status} />}
             <h1 className="font-display text-2xl font-bold text-white">One last thing</h1>
             <p className="flex items-center gap-2 text-sm text-slate-400">
               <Github size={14} /> Signed in as <span className="text-slate-200">{signup.email}</span>
@@ -93,8 +105,9 @@ export default function GithubAuthCallback() {
                 only test targets I own or am authorized to test.
               </span>
             </label>
+            {beta && <BetaOptIn checked={joinBeta} onChange={setJoinBeta} />}
             {error && <p className="text-sm text-severity-critical">{error}</p>}
-            <button className="btn-primary w-full !py-3" disabled={busy}>
+            <button className="btn-primary w-full !py-3" disabled={busy || (beta && !joinBeta)}>
               {busy ? "Creating your account..." : "Create account"} <ArrowRight size={15} />
             </button>
           </form>

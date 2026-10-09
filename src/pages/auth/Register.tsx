@@ -1,11 +1,14 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck, Database, EyeOff } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { PasswordInput } from "@/components/ui";
 import { BrandWordmark } from "@/components/BrandLogo";
 import GithubAuthButton from "@/components/GithubAuthButton";
+import { BetaBanner, BetaOptIn } from "@/components/BetaSignup";
+import { errorCode } from "@/lib/api";
+import { useSignupStatus } from "@/lib/betaSignup";
 
 const slide = { initial: { opacity: 0, x: 30 }, animate: { opacity: 1, x: 0 }, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } };
 
@@ -16,11 +19,20 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [joinBeta, setJoinBeta] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Beta: registering means joining the sandbox; once the beta is full,
+  // registration is closed until it is reopened.
+  const { status, reload: reloadStatus } = useSignupStatus();
+  const beta = status?.phase === "beta";
+  const closed = status?.phase === "closed";
   const [error, setError] = useState<string | null>(null);
 
   // Only what the next screen needs. Country, industry, contacts and plan are
   // asked later from the profile checklist; Free is the default plan.
+  // Registration is closed: the waitlist takes its place.
+  if (closed) return <Navigate to="/waitlist" replace />;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -28,11 +40,15 @@ export default function Register() {
     if (!email.includes("@")) return setError("Enter a valid work email");
     if (password.length < 12) return setError("Password must be at least 12 characters");
     if (!accepted) return setError("Accept the terms to continue");
+    if (beta && !joinBeta) return setError("Join the beta sandbox to register during the beta");
     setBusy(true);
     try {
-      const res = await register(name.trim(), email.trim(), password);
+      const res = await register(name.trim(), email.trim(), password, beta && joinBeta);
       navigate(res.signedIn ? "/setup" : `/login?email=${encodeURIComponent(email.trim())}`);
     } catch (err) {
+      const code = errorCode(err);
+      // The phase changed while the form was open: show the current one.
+      if (code === "registration_closed" || code === "beta_opt_in_required") reloadStatus();
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setBusy(false);
@@ -74,6 +90,7 @@ export default function Register() {
         {/* Form */}
         <motion.div initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, delay: 0.1 }}>
           <div className="card p-7">
+            {beta && status && <BetaBanner status={status} />}
             <h2 className="font-display text-2xl font-bold text-white">Create your account</h2>
             <p className="mt-1.5 text-sm text-slate-400">Free plan · no card · about a minute.</p>
 
@@ -101,8 +118,9 @@ export default function Register() {
                   only test targets I own or am authorized to test.
                 </span>
               </label>
+              {beta && <BetaOptIn checked={joinBeta} onChange={setJoinBeta} />}
               {error && <p className="text-sm text-severity-critical">{error}</p>}
-              <button className="btn-primary w-full !py-3" disabled={busy}>
+              <button className="btn-primary w-full !py-3" disabled={busy || (beta && !joinBeta)}>
                 {busy ? "Creating your account..." : "Create account"} <ArrowRight size={15} />
               </button>
               <p className="text-center text-xs text-slate-500">

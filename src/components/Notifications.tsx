@@ -5,7 +5,7 @@ import {
   ShieldQuestion, WifiOff, X,
 } from "lucide-react";
 import { api, API_BASE, ApiError, DEMO_MODE } from "@/lib/api";
-import { APP_URL, ATTACK_URL, CODE_URL, DEFEND_URL } from "@/lib/config";
+import { appLink } from "@/lib/links";
 import { timeAgo, cx } from "@/lib/utils";
 
 // Platform copy of packages/sg-shared/src/components/AlertNotifications.tsx
@@ -14,7 +14,6 @@ import { timeAgo, cx } from "@/lib/utils";
 // connection watch. Links into the applications open in a new tab.
 
 type ApplicationKey = "core" | "attack" | "defend" | "code";
-const APP_HOST: Record<ApplicationKey, string> = { core: APP_URL, attack: ATTACK_URL, defend: DEFEND_URL, code: CODE_URL };
 const isDemoMode = () => DEMO_MODE;
 
 type AlertEvent = {
@@ -379,7 +378,7 @@ function NoticeLinkWrap({ link, onGo, className, children }: { link?: NoticeLink
     return <a href={link.href} className={className} onClick={onGo}>{children}</a>;
   }
   return (
-    <a href={`${APP_HOST[link.app]}${link.path}`} target="_blank" rel="noopener noreferrer" className={className} onClick={onGo}>
+    <a href={appLink(link.app, link.path)} target="_blank" rel="noopener noreferrer" className={className} onClick={onGo}>
       {children}
     </a>
   );

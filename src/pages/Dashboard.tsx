@@ -6,12 +6,13 @@ import {
   ShieldCheck, ScrollText, Rocket, AlertTriangle, Copy,
 } from "lucide-react";
 import DocLink from "@/components/DocLink";
+import AllowlistDriftBanner from "@/components/AllowlistDriftBanner";
 import ProfileCompletionNotice, { buildProfileChecklist } from "@/components/ProfileCompletionNotice";
 import { Card, CardHeader, CollapsibleCard, CompletionDonut, AnimatedNumber, StatusBadge } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { useSmartPoll } from "@/lib/usePolling";
 import { APP_URL } from "@/lib/links";
-import { DOMAIN_ITEM, MILESTONE_META, hasVerifiedDomain } from "@/lib/onboarding";
+import { MILESTONE_META } from "@/lib/onboarding";
 import { timeAgo, cx } from "@/lib/utils";
 
 export default function Dashboard() {
@@ -19,8 +20,6 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const dc = state.dualControl;
   const twoUsers = state.users.length >= 2;
-  const [domainVerified, setDomainVerified] = React.useState<boolean | null>(null);
-  React.useEffect(() => { void hasVerifiedDomain().then(setDomainVerified); }, []);
 
   // Smart polling: keep tenant overview fresh in the background (SWR-style).
   // Skip the first tick (hydrateSession runs on mount) and poll every 60s;
@@ -37,12 +36,8 @@ export default function Dashboard() {
   const checklist = onboarding
     ? onboarding.milestones
         .filter((m) => m.key !== "dual_control_enabled" || twoUsers || m.done_at)
-        .flatMap((m) => {
-          const row = { done: Boolean(m.done_at), label: MILESTONE_META[m.key].label, to: MILESTONE_META[m.key].to, optional: Boolean(m.optional) };
-          // VAPT needs a verified domain, so that step comes right before it.
-          if (m.key !== "first_vapt" || domainVerified === null) return [row];
-          return [{ done: domainVerified || row.done, label: DOMAIN_ITEM.label, to: DOMAIN_ITEM.to, optional: false }, row];
-        })
+        // Verifying the domain is a step inside the first-VAPT journey in Attack.
+        .map((m) => ({ done: Boolean(m.done_at), label: MILESTONE_META[m.key].label, to: MILESTONE_META[m.key].to, optional: Boolean(m.optional) }))
     : [
         { done: state.setup.setup_complete, label: "Organization setup complete", to: "/dashboard", optional: false },
         { done: twoUsers, label: "Two dual-control people created", to: "/users", optional: false },
@@ -72,6 +67,9 @@ export default function Dashboard() {
 
       {/* Profile completion — the admin's outstanding setup work, in plain language */}
       <ProfileCompletionNotice />
+
+      {/* A hosted security database missing addresses SecureGraph added since. */}
+      <AllowlistDriftBanner />
 
       {/* Security DB gate */}
       {!securityDbReady && (

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { SERVICE_KEY_STEP, needsAuditControl } from "@/lib/firstRun";
+import { setDualControlPolicy } from "@/lib/dualControlPolicy";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Users, UserPlus, ShieldCheck, Link2, KeyRound, ArrowRight, ArrowLeft,
@@ -17,8 +18,25 @@ import { timeAgo, maskEmail, cx, humanize } from "@/lib/utils";
 import type { OrgUser } from "@/lib/types";
 
 export default function People() {
-  const { state, operate, toast, requireDualControl, decidePending, refreshPending } = useStore();
+  const { state, operate, toast, requireDualControl, decidePending, refreshPending, hydrateSession } = useStore();
   const [searchParams] = useSearchParams();
+  const navigatePeople = useNavigate();
+  // First run, dual control chosen: assigning the roles turns it on.
+  const enableDual = searchParams.get("enable") === "dual";
+  const [enabling, setEnabling] = useState(false);
+  const enableAndContinue = async () => {
+    setEnabling(true);
+    try {
+      await setDualControlPolicy("on");
+      await hydrateSession();
+      toast("success", "Dual control on");
+      navigatePeople(SERVICE_KEY_STEP);
+    } catch (err) {
+      toast("error", "Could not turn on dual control", err instanceof Error ? err.message : "");
+    } finally {
+      setEnabling(false);
+    }
+  };
   const [addOpen, setAddOpen] = useState(false);
   const [addInitiatorOpen, setAddInitiatorOpen] = useState(false);
   const [reassignOpen, setReassignOpen] = useState(false);
@@ -127,11 +145,17 @@ export default function People() {
       {searchParams.get("onboarding") === "1" && (
         <div className="mb-5 flex flex-wrap items-center gap-3 rounded-md border border-gold-400/30 bg-gold-400/[0.06] px-4 py-3">
           <p className="min-w-0 flex-1 text-sm text-slate-300">
-            {needsAuditControl(state)
-              ? "Set up audit control first: choose who starts sensitive actions and who approves them. Your service key is created next, then you connect your security database."
-              : "Audit control is set. Next, your service key is created and you connect your security database."}
+            {enableDual && !dc.configured
+              ? "You chose dual control. Add a second person, then choose who starts sensitive actions and who approves them. Dual control turns on when both are assigned."
+              : needsAuditControl(state)
+                ? "Set up audit control first: choose who starts sensitive actions and who approves them. Your service key is created next, then you connect your security database."
+                : "Audit control is set. Next, your service key is created and you connect your security database."}
           </p>
-          {!needsAuditControl(state) && (
+          {enableDual && dc.configured && state.dualControl.policy_mode === "off" ? (
+            <button type="button" onClick={() => void enableAndContinue()} disabled={enabling} className="btn-primary shrink-0 !py-1.5 text-sm">
+              Turn on dual control and continue
+            </button>
+          ) : !needsAuditControl(state) && !(enableDual && !dc.configured) && (
             <Link to={SERVICE_KEY_STEP} className="btn-primary shrink-0 !py-1.5 text-sm">Continue</Link>
           )}
         </div>
@@ -596,7 +620,7 @@ function DeleteRoleDialog({
 
 // ── Bootstrap wizard (Phases 0---3 from DUAL_CONTROL_SETUP_FE.md) ──────────────
 function BootstrapWizard() {
-  const { state, createUser, assignDualControl, toast } = useStore();
+  const { state, createUser, assignDualControl, toast, hydrateSession } = useStore();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const users = state.users;
@@ -746,6 +770,11 @@ function BootstrapWizard() {
                     try {
                       await assignDualControl(initiator.id, authorizer.id);
                       toast("success", "Audit control active", "The audit controller is recorded on every platform action.");
+                      // First run with dual control chosen: the roles are in place, so turn it on.
+                      if (searchParams.get("enable") === "dual") {
+                        await setDualControlPolicy("on");
+                        await hydrateSession();
+                      }
                       // First run continues to the service key, then the security database.
                       if (searchParams.get("onboarding") === "1") navigate(SERVICE_KEY_STEP);
                     } catch (err) {
