@@ -1066,13 +1066,13 @@ function UsersTable({
               className="input"
               value={pwd}
               onChange={(e) => setPwd(e.target.value)}
-              placeholder="At least 8 characters"
+              placeholder="At least 12 characters"
               autoComplete="new-password"
             />
           </div>
           <button
             className="btn-primary w-full"
-            disabled={savingPwd || pwd.length < 8}
+            disabled={savingPwd || pwd.length < 12}
             onClick={async () => {
               if (!pwdFor) return;
               setSavingPwd(true);

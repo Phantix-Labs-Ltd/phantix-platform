@@ -26,7 +26,7 @@ export default function Register() {
     setError(null);
     if (name.trim().length < 2) return setError("Enter your company name");
     if (!email.includes("@")) return setError("Enter a valid work email");
-    if (password.length < 8) return setError("Password must be at least 8 characters");
+    if (password.length < 12) return setError("Password must be at least 12 characters");
     if (!accepted) return setError("Accept the terms to continue");
     setBusy(true);
     try {
@@ -90,7 +90,7 @@ export default function Register() {
               </div>
               <div>
                 <label className="label" htmlFor="reg-password">Password</label>
-                <PasswordInput id="reg-password" className="input" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" />
+                <PasswordInput id="reg-password" className="input" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 12 characters" />
               </div>
               <label className="flex items-start gap-2.5 text-[13px] leading-5 text-slate-400">
                 <input type="checkbox" className="mt-0.5" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
