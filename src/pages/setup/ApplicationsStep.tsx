@@ -18,6 +18,8 @@ interface ApplicationCard {
   order: number;
   base: boolean;
   entitled: boolean;
+  /** The plan allows it, switched on or not. Older backends omit it. */
+  available?: boolean;
   reason: string | null;
 }
 
@@ -25,6 +27,9 @@ interface Snapshot {
   applications: ApplicationCard[];
   enabled: ApplicationKey[];
 }
+
+/** Whether the organization may switch this application on (its plan allows it). */
+const canSwitchOn = (card: { entitled: boolean; available?: boolean }) => card.available ?? card.entitled;
 
 /** What a new organization starts with: the hub and the first-VAPT application. */
 const STARTER: ApplicationKey[] = ["core", "attack"];
@@ -47,7 +52,7 @@ export default function ApplicationsStep() {
       .get<Snapshot>("/organizations/me/applications")
       .then((v) => {
         setSnap(v);
-        const entitled = v.applications.filter((a) => a.entitled).map((a) => a.key);
+        const entitled = v.applications.filter(canSwitchOn).map((a) => a.key);
         const enabled = new Set(v.enabled || []);
         // An untouched organization has everything its plan allows switched on;
         // start it from Core and Attack. A choice already made is kept.
@@ -62,7 +67,7 @@ export default function ApplicationsStep() {
 
   const toggle = (card: ApplicationCard) => {
     if (card.base) return;
-    if (!card.entitled) {
+    if (!canSwitchOn(card)) {
       toast("info", "Not in your plan", card.reason || "Upgrade to add this application.");
       return;
     }
@@ -108,7 +113,8 @@ export default function ApplicationsStep() {
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-400">
           Tap an application to switch it on or off. Core and Attack are on to start with: Core is home base, and
-          your first VAPT runs in Attack. You can change this any time from Applications.
+          your first VAPT runs in Attack. Switch on Defend and Code too if you want them. You can change this any time
+          from Applications.
         </p>
 
         {loading ? (
@@ -133,7 +139,7 @@ export default function ApplicationsStep() {
                   className={cx(
                     "card relative flex flex-col items-start p-5 text-left transition-colors",
                     on ? "border-gold-400/60 bg-gold-400/[0.06]" : "hover:border-phantix-600",
-                    !card.entitled && "opacity-60",
+                    !canSwitchOn(card) && "opacity-60",
                   )}
                 >
                   <span
@@ -147,7 +153,7 @@ export default function ApplicationsStep() {
                   <span className="pr-8 font-display text-base font-bold text-white">{card.label}</span>
                   <span className="mt-1 text-sm text-slate-400">{card.tagline}</span>
                   <span className="mt-3 text-[12px] font-medium text-slate-500">
-                    {card.base ? "Always on" : !card.entitled ? card.reason || "Not in your plan" : on ? "On" : "Off"}
+                    {card.base ? "Always on" : !canSwitchOn(card) ? card.reason || "Not in your plan" : on ? "On" : "Off"}
                   </span>
                 </button>
               );
@@ -155,7 +161,7 @@ export default function ApplicationsStep() {
           </div>
         )}
 
-        {snap && !picked.has("attack") && cards.some((c) => c.key === "attack" && c.entitled) && (
+        {snap && !picked.has("attack") && cards.some((c) => c.key === "attack" && canSwitchOn(c)) && (
           <p className="mt-4 text-sm text-severity-medium">Attack is off. You need it to run your first VAPT.</p>
         )}
 

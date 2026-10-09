@@ -33,6 +33,8 @@ interface ApplicationCard {
   order: number;
   base: boolean;
   entitled: boolean;
+  /** The plan allows it, switched on or not. Older backends omit it. */
+  available?: boolean;
   accessible: boolean;
   reason: string | null;
   open_url: string;
@@ -44,6 +46,9 @@ interface Snapshot {
   enabled: ApplicationKey[];
   default: ApplicationKey;
 }
+
+/** Whether the organization may switch this application on (its plan allows it). */
+const canSwitchOn = (card: { entitled: boolean; available?: boolean }) => card.available ?? card.entitled;
 
 export default function Applications() {
   const { toast } = useStore();
@@ -64,7 +69,7 @@ export default function Applications() {
 
   async function toggle(card: ApplicationCard) {
     if (card.base || !snap) return; // Core is the entry point — always on
-    if (!card.entitled) {
+    if (!canSwitchOn(card)) {
       toast("info", "Not in your plan", card.reason || "Upgrade to add this application.");
       return;
     }
@@ -125,7 +130,7 @@ export default function Applications() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
               >
-                <Card className={cx(!card.entitled && "opacity-70")}>
+                <Card className={cx(!canSwitchOn(card) && "opacity-70")}>
                   <CardHeader
                     title={
                       <span className="flex items-center gap-2">
@@ -145,10 +150,10 @@ export default function Applications() {
                         <button
                           type="button"
                           onClick={() => void toggle(card)}
-                          disabled={busy || !card.entitled}
+                          disabled={busy || !canSwitchOn(card)}
                           aria-pressed={on}
                           title={
-                            card.entitled
+                            canSwitchOn(card)
                               ? on
                                 ? `Disable ${card.label}`
                                 : `Enable ${card.label}`
@@ -157,7 +162,7 @@ export default function Applications() {
                           className={cx(
                             "relative h-6 w-11 shrink-0 rounded-full transition-colors",
                             on ? "bg-gold-500" : "bg-phantix-700",
-                            (busy || !card.entitled) && "cursor-not-allowed opacity-60",
+                            (busy || !canSwitchOn(card)) && "cursor-not-allowed opacity-60",
                           )}
                         >
                           <span
@@ -199,7 +204,7 @@ export default function Applications() {
                       <span className="flex items-center gap-1.5 text-xs text-slate-400">
                         <Loader2 size={13} className="animate-spin" /> Saving…
                       </span>
-                    ) : !card.entitled ? (
+                    ) : !canSwitchOn(card) ? (
                       <span className="text-xs text-slate-500">
                         {card.reason || "Not included in your plan."}
                       </span>

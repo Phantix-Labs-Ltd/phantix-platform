@@ -57,11 +57,11 @@ const providerFromHost = (host: string): Provider =>
  * SecureGraph saves, tests and prepares it in one go. The host is kept as a
  * name (not resolved to an IP) because Neon and Supabase route by hostname.
  */
-export default function QuickConnectDatabase({ guard, onManual }: { guard: () => Promise<boolean>; onManual: () => void }) {
-  const { createConnection, testConnection, toast, markMilestone } = useStore();
+export default function QuickConnectDatabase({ guard, onManual, onCreated }: { guard: () => Promise<boolean>; onManual: () => void; onCreated: (id: number) => void }) {
+  const { createConnection, toast } = useStore();
   const [provider, setProvider] = useState<Provider>("neon");
   const [url, setUrl] = useState("");
-  const [busy, setBusy] = useState<null | "saving" | "testing">(null);
+  const [busy, setBusy] = useState<null | "saving">(null);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const parsed = useMemo(() => parsePostgresUrl(url), [url]);
@@ -89,14 +89,11 @@ export default function QuickConnectDatabase({ guard, onManual }: { guard: () =>
         ssl_mode: parsed.sslMode,
         environment: "production",
       });
-      if (id) {
-        setBusy("testing");
-        await testConnection(id);
-      }
       setUrl("");
       setDone(true);
-      void markMilestone("security_db_connected");
-      toast("success", "Security database connected", "It's ready for scans and findings.");
+      toast("success", "Security database saved", "Next, test it and prepare it.");
+      // Test → prepare → continue setup happens in SecurityDbSetupModal.
+      if (id) onCreated(id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not connect. Check the URL and that the database accepts connections.");
     } finally {
@@ -108,7 +105,7 @@ export default function QuickConnectDatabase({ guard, onManual }: { guard: () =>
     return (
       <Card className="mb-5">
         <p className="flex items-center gap-2.5 text-sm text-emerald-300">
-          <CheckCircle2 size={16} /> Connected and prepared. Your findings will be stored here.
+          <CheckCircle2 size={16} /> Saved. Test it and prepare it in the window that opened to finish.
         </p>
       </Card>
     );
@@ -173,7 +170,7 @@ export default function QuickConnectDatabase({ guard, onManual }: { guard: () =>
         <div className="flex flex-wrap items-center gap-3">
           <button className="btn-primary" disabled={!!busy || !url.trim()}>
             {busy ? <Loader2 size={15} className="animate-spin" /> : <Database size={15} />}
-            {busy === "saving" ? "Saving..." : busy === "testing" ? "Testing and preparing..." : "Connect"}
+            {busy === "saving" ? "Saving..." : "Connect"}
           </button>
           <button type="button" onClick={onManual} className="btn-alt">
             <PenLine size={15} /> Enter details manually

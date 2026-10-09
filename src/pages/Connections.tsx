@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Database, Plus, ShieldCheck, AlertTriangle, Loader2, Trash2, Zap, Info, ArrowLeft, ArrowRight } from "lucide-react";
 import DocLink from "@/components/DocLink";
 import QuickConnectDatabase from "@/components/QuickConnectDatabase";
+import SecurityDbSetupModal from "@/components/SecurityDbSetupModal";
 import { PageHeader, Card, CollapsibleCard, StatusBadge, Modal, EmptyState } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { api, DEMO_MODE } from "@/lib/api";
@@ -15,6 +16,8 @@ export default function Connections() {
     toast, requireDualControl, refreshConnections, hydrateSession,
   } = useStore();
   const [createOpen, setCreateOpen] = useState(false);
+  // A security database just added: walk through test → prepare → continue.
+  const [setupId, setSetupId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [drivers, setDrivers] = useState<{ db_type: string; live: boolean; note?: string }[]>([]);
   const [optionHints, setOptionHints] = useState<any>(null);
@@ -88,7 +91,7 @@ export default function Connections() {
       </motion.div>
 
       {!securityDbReady && (
-        <QuickConnectDatabase guard={guard} onManual={async () => { if (await guard()) setCreateOpen(true); }} />
+        <QuickConnectDatabase guard={guard} onManual={async () => { if (await guard()) setCreateOpen(true); }} onCreated={setSetupId} />
       )}
 
       {optionHints?.by_db_type && (
@@ -266,7 +269,8 @@ export default function Connections() {
         </CollapsibleCard>
       </motion.div>
 
-      <CreateConnectionModal open={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateConnectionModal open={createOpen} onClose={() => setCreateOpen(false)} onCreated={setSetupId} />
+      <SecurityDbSetupModal connectionId={setupId} onClose={() => setSetupId(null)} />
     </div>
   );
 }
@@ -285,7 +289,7 @@ const ENGINES = [
 ] as const;
 type Engine = (typeof ENGINES)[number];
 
-function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function CreateConnectionModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (id: number) => void }) {
   const { createConnection, toast, state, requireDualControl, operate } = useStore();
   const [busy, setBusy] = useState(false);
   // Step 1 picks what the database is for, step 2 its type; the details form
@@ -393,7 +397,7 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
           try {
             let host = String(f.get("host")).trim();
             host = await resolveHost(host);
-            await createConnection({
+            const id = await createConnection({
               name: String(f.get("name")),
               connection_purpose: purpose,
               db_type: String(f.get("db_type")),
@@ -408,7 +412,9 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
               environment: String(f.get("environment") || "production"),
             });
             onClose();
-            toast("success", "Connection saved", "Credentials stored encrypted. Next: test, then prepare the security database.");
+            toast("success", "Connection saved", "Credentials stored encrypted.");
+            // A security database goes straight into test → prepare → continue.
+            if (id && purpose === "security_data_storage") onCreated(id);
           } catch (err) {
             toast("error", "Could not save connection", err instanceof Error ? err.message : "Request failed");
           } finally {

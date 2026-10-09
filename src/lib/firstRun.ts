@@ -14,9 +14,12 @@ export const AUDIT_CONTROL_STEP = "/users?onboarding=1";
 // connected, so the scan results can be saved.
 export const SECURITY_DB_STEP = "/connections?from=quick-scan";
 // After the Quick Scan results are saved: verify the domain (active testing
-// needs it), choose the applications (Core and Attack to start), then create
-// app users and email them login links before anyone is sent to the apps.
+// needs it), choose a billing plan (production only: the plan decides which
+// applications can be switched on), choose the applications (Core and Attack
+// to start), then create app users and email them login links before anyone is
+// sent to the apps.
 export const DOMAIN_STEP = "/get-started/verify-domain";
+export const PLAN_STEP = "/get-started/plan";
 export const APPLICATIONS_STEP = "/get-started/applications";
 export const APP_ACCESS_STEP = "/get-started/app-access";
 
