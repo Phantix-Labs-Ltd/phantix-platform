@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Database, Plus, ShieldCheck, AlertTriangle, Loader2, Trash2, Zap, Info, ArrowRight } from "lucide-react";
+import { Database, Plus, ShieldCheck, AlertTriangle, Loader2, Trash2, Zap, Info, ArrowLeft, ArrowRight } from "lucide-react";
 import DocLink from "@/components/DocLink";
 import QuickConnectDatabase from "@/components/QuickConnectDatabase";
 import { PageHeader, Card, CollapsibleCard, StatusBadge, Modal, EmptyState } from "@/components/ui";
@@ -271,10 +271,28 @@ export default function Connections() {
   );
 }
 
+const PURPOSES = [
+  { value: "security_data_storage", name: "Security database", icon: ShieldCheck, desc: "SecureGraph stores your findings, assets and evidence here, in its own dedicated schema on a PostgreSQL database. Your organization's primary connection." },
+  { value: "config_inspection", name: "Config inspection", icon: Info, desc: "SecureGraph checks this database's security settings, such as roles, privileges and policies, read-only. It never reads your business data." },
+] as const;
+type Purpose = (typeof PURPOSES)[number]["value"];
+
+const ENGINES = [
+  { value: "postgresql", name: "PostgreSQL", port: 5432, desc: "Open-source relational database, including Supabase, Neon, Amazon RDS and Azure Database for PostgreSQL." },
+  { value: "mysql", name: "MySQL or MariaDB", port: 3306, desc: "Widely used relational database, including Amazon Aurora MySQL and PlanetScale." },
+  { value: "mssql", name: "Microsoft SQL Server", port: 1433, desc: "Microsoft's relational database, including Azure SQL Database." },
+  { value: "mongodb", name: "MongoDB", port: 27017, desc: "Document database that stores JSON-like records, including MongoDB Atlas." },
+] as const;
+type Engine = (typeof ENGINES)[number];
+
 function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { createConnection, toast, state, requireDualControl, operate } = useStore();
   const [busy, setBusy] = useState(false);
-  const [purpose, setPurpose] = useState<"security_data_storage" | "config_inspection">("security_data_storage");
+  // Step 1 picks what the database is for, step 2 its type; the details form
+  // only shows once both are chosen.
+  const [engine, setEngine] = useState<Engine | null>(null);
+  React.useEffect(() => { if (open) { setEngine(null); setPurpose(null); } }, [open]);
+  const [purpose, setPurpose] = useState<Purpose | null>(null);
   const [resolvingHost, setResolvingHost] = useState<string | null>(null);
 
   const resolveHost = async (host: string): Promise<string> => {
@@ -303,8 +321,57 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Add database connection" wide>
+    <Modal open={open} onClose={onClose} title={purpose && engine ? `Add ${engine.name} ${purpose === "security_data_storage" ? "security database" : "config inspection connection"}` : "Add database connection"} wide>
+      {!purpose ? (
+        <div>
+          <p className="text-sm text-slate-400">What should SecureGraph use this database for?</p>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {PURPOSES.map((p) => (
+              <button
+                type="button"
+                key={p.value}
+                onClick={() => {
+                  setPurpose(p.value);
+                  // The security database is always PostgreSQL, so it skips the type step.
+                  if (p.value === "security_data_storage") setEngine(ENGINES[0]);
+                }}
+                className="group rounded-md border border-phantix-700/50 bg-phantix-950/40 p-4 text-left transition-all hover:border-gold-400/50 hover:bg-gold-400/5"
+              >
+                <p className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                  <p.icon size={15} className="text-gold-400" /> {p.name}
+                  <ArrowRight size={14} className="ml-auto text-slate-600 transition-colors group-hover:text-gold-300" />
+                </p>
+                <p className="mt-1.5 text-[13px] leading-5 text-slate-500">{p.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : !engine ? (
+        <div>
+          <button type="button" onClick={() => setPurpose(null)} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200">
+            <ArrowLeft size={14} /> Change what this database is for
+          </button>
+          <p className="mt-3 text-sm text-slate-400">Which type of database are you connecting?</p>
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {ENGINES.map((e) => (
+              <button
+                type="button"
+                key={e.value}
+                onClick={() => setEngine(e)}
+                className="group rounded-md border border-phantix-700/50 bg-phantix-950/40 p-4 text-left transition-all hover:border-gold-400/50 hover:bg-gold-400/5"
+              >
+                <p className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                  <Database size={15} className="text-gold-400" /> {e.name}
+                  <ArrowRight size={14} className="ml-auto text-slate-600 transition-colors group-hover:text-gold-300" />
+                </p>
+                <p className="mt-1.5 text-[13px] leading-5 text-slate-500">{e.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
       <form
+        key={`${engine.value}-${purpose}`}
         className="space-y-4"
         onSubmit={async (e) => {
           e.preventDefault();
@@ -349,36 +416,21 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
           }
         }}
       >
+        {purpose === "security_data_storage" ? (
+          <button type="button" onClick={() => { setPurpose(null); setEngine(null); }} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200">
+            <ArrowLeft size={14} /> Change what this database is for
+          </button>
+        ) : (
+          <button type="button" onClick={() => setEngine(null)} className="inline-flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200">
+            <ArrowLeft size={14} /> Choose a different database type
+          </button>
+        )}
+        <input type="hidden" name="db_type" value={engine.value} />
         {/* One column on phones (two cramped host/database values); two from sm up. */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="label">Name</label>
-            <input name="name" className="input" defaultValue="SecureGraph Store" required />
-          </div>
-          <div className="grid grid-cols-1 gap-2 sm:col-span-2 sm:grid-cols-2">
-            {([
-              ["security_data_storage", "Security data storage", "SecureGraph writes findings, assets and evidence to its own dedicated schema"],
-              ["config_inspection", "Config inspection", "Read-only security posture, never business rows"],
-            ] as const).map(([v, label, desc]) => (
-              <button
-                type="button"
-                key={v}
-                onClick={() => setPurpose(v)}
-                className={cx("rounded-md border p-3.5 text-left transition-all", purpose === v ? "border-gold-400/60 bg-gold-400/8" : "border-phantix-700/50 bg-phantix-950/40 hover:border-phantix-500/50")}
-              >
-                <p className="text-sm font-semibold text-slate-200">{label}</p>
-                <p className="mt-1 text-[13px] leading-4 text-slate-500">{desc}</p>
-              </button>
-            ))}
-          </div>
-          <div>
-            <label className="label">Engine</label>
-            <select name="db_type" className="input">
-              <option value="postgresql">postgresql</option>
-              <option value="mysql">mysql</option>
-              <option value="mssql">mssql</option>
-              <option value="mongodb">mongodb</option>
-            </select>
+            <input name="name" className="input" placeholder="SecureGraph Store" required />
           </div>
           <div>
             <label className="label">Host</label>
@@ -388,15 +440,15 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
           </div>
           <div>
             <label className="label">Port</label>
-            <input name="port" type="number" className="input font-mono" defaultValue={5432} required />
+            <input name="port" type="number" className="input font-mono" placeholder={String(engine.port)} required />
           </div>
           <div>
             <label className="label">Database</label>
-            <input name="database_name" className="input font-mono" defaultValue="phantix_security" required />
+            <input name="database_name" className="input font-mono" placeholder="phantix_security" required />
           </div>
           <div>
             <label className="label">Target schema</label>
-            <input name="target_schema" className="input font-mono" defaultValue="phantix" />
+            <input name="target_schema" className="input font-mono" placeholder="phantix" />
           </div>
           <div>
             <label className="label">Username</label>
@@ -429,6 +481,7 @@ function CreateConnectionModal({ open, onClose }: { open: boolean; onClose: () =
         </div>
         <button className="btn-primary w-full" disabled={busy}>{resolvingHost ? "Resolving DNS..." : busy ? "Saving..." : "Save connection"}</button>
       </form>
+      )}
     </Modal>
   );
 }
