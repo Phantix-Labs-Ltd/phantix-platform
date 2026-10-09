@@ -17,6 +17,7 @@ import howto10 from "@docs/docs/how-to/platform/10-connect-github.md?raw";
 import howto11 from "@docs/docs/how-to/platform/11-billing-and-subscribe.md?raw";
 import howto12 from "@docs/docs/how-to/platform/12-configure-alerts.md?raw";
 import howto13 from "@docs/docs/how-to/platform/13-sandbox-feedback.md?raw";
+import howto14 from "@docs/docs/how-to/platform/14-install-connector.md?raw";
 
 export interface DocEntry {
   id: string;
@@ -46,6 +47,7 @@ export const docs: DocEntry[] = [
   { id: "howto-platform-11", title: "Billing and subscribe", description: "Plans, payments, and subscription management.", category: "how-to-platform", content: howto11 },
   { id: "howto-platform-12", title: "Set up alert channels", description: "Email, WhatsApp and Telegram alert delivery.", category: "how-to-platform", content: howto12 },
   { id: "howto-platform-13", title: "BETA sandbox feedback", description: "Report issues and feedback from the sandbox.", category: "how-to-platform", content: howto13 },
+  { id: "howto-platform-14", title: "Install the SecureGraph Connector", description: "Reach a database on a private network without opening an inbound port.", category: "how-to-platform", content: howto14 },
 ];
 
 export function getDoc(id: string): DocEntry | undefined {
@@ -73,6 +75,7 @@ const DOC_ID_BY_FILE: Record<string, string> = {
   "11-billing-and-subscribe.md": "howto-platform-11",
   "12-configure-alerts.md": "howto-platform-12",
   "13-sandbox-feedback.md": "howto-platform-13",
+  "14-install-connector.md": "howto-platform-14",
 };
 
 /**

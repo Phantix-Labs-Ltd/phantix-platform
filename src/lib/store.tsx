@@ -598,6 +598,8 @@ type Store = {
       password?: string;
       ssl_mode?: string;
       environment?: string;
+      network_mode?: "direct" | "connector";
+      connector_id?: string | null;
     },
   ) => Promise<number | null>;
   testConnection: (id: number) => Promise<void>;
@@ -2227,6 +2229,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         password?: string;
         ssl_mode?: string;
         environment?: string;
+        network_mode?: "direct" | "connector";
+        connector_id?: string | null;
       },
     ) => {
       if (DEMO_MODE) {
@@ -2273,6 +2277,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           target_schema: c.target_schema || "phantix",
           is_primary: c.is_primary,
           environment: c.environment || "production",
+          network_mode: c.network_mode || "direct",
+          connector_id: c.network_mode === "connector" ? c.connector_id || undefined : undefined,
         },
         needsDc ? { dualControl: true } : undefined,
       );
