@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2, Network, Plus, RefreshCw, Trash2 } from "lucide-react";
 import ConnectorInstallGuide from "@/components/ConnectorInstallGuide";
-import DocLink from "@/components/DocLink";
 import { Card, CardHeader, Modal } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { timeAgo, cx } from "@/lib/utils";
@@ -90,12 +89,9 @@ export default function ConnectorsCard({
         title="Connectors"
         subtitle="For databases on a private network. A connector runs next to the database and connects out to SecureGraph, so you open no inbound port."
         action={
-          <div className="flex shrink-0 items-center gap-2">
-            <DocLink docId="howto-platform-14" label="Connector how-to" />
-            <button type="button" className="btn-secondary !py-1.5 text-xs" onClick={async () => { if (await guard()) setAdding(true); }}>
-              <Plus size={13} /> Add connector
-            </button>
-          </div>
+          <button type="button" className="btn-secondary !py-1.5 text-xs" onClick={async () => { if (await guard()) setAdding(true); }}>
+            <Plus size={13} /> Add connector
+          </button>
         }
       />
       {list.length === 0 ? (
