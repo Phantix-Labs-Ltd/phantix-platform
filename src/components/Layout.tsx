@@ -6,6 +6,7 @@ import {
   ScrollText, LogOut, Lock, Unlock, ChevronDown, ChevronLeft, ChevronRight, Timer, KeyRound, Rocket,
   RotateCcw, Sparkles, BellRing, Github, Radar, FlaskConical, Cable,
   AlertTriangle, Activity, MoreHorizontal, LayoutGrid, ArrowLeft, Menu, X,
+  Compass,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useSidebarCollapsed } from "@/lib/useSidebarCollapsed";
@@ -20,6 +21,8 @@ import { loadSandboxMe } from "@/lib/sandbox";
 import { RouteSkeleton } from "@/components/RouteSkeleton";
 import { BrandMark, BrandWordmark } from "@/components/BrandLogo";
 import { MobileTabBar, MoreSheet, usePageTitle } from "@/components/MobileAppShell";
+import GuidedTour, { startTour } from "@/components/GuidedTour";
+import { navAnchor, PLATFORM_TOUR, TOUR_STORAGE_KEY } from "@/lib/tour";
 import { useTableCards } from "@/lib/useTableCards";
 
 type NavLeafItem = { to: string; label: string; icon: React.ReactNode };
@@ -310,7 +313,7 @@ export default function Layout() {
 
         <nav className="flex-1 space-y-1.5 overflow-y-auto px-2.5 pb-3">
           {navSections.map((section) => (
-            <div key={section.label}>
+            <div key={section.label} data-tour={navAnchor(section.label)}>
               <p className="nav-section-label sg-hide-collapsed">{section.label}</p>
               <div className="space-y-0.5">
                 {section.items.map((item) => {
@@ -355,6 +358,7 @@ export default function Layout() {
             href={`${APP_URL}/dashboard`}
             target="_blank"
             rel="noreferrer"
+            data-tour="launch-app"
             className="flex items-center gap-2.5 rounded-md border border-gold-400/30 bg-phantix-900 p-2.5 transition-all hover:border-gold-400/50 hover:border-gold-400/60"
           >
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-400/15 text-gold-400">
@@ -464,6 +468,7 @@ export default function Layout() {
                 aria-haspopup="menu"
                 aria-expanded={userMenu}
                 aria-label="Account menu"
+                data-tour="account"
                 className="flex items-center gap-2.5 rounded-md border border-phantix-700/50 bg-phantix-900/60 py-1.5 pl-1.5 pr-2.5 hover:border-phantix-500/50"
               >
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-gold-400/40 bg-phantix-850 font-display text-xs font-bold text-gold-300">
@@ -496,6 +501,15 @@ export default function Layout() {
                         <RotateCcw size={15} /> Reset demo data
                       </button>
                       ) : null}
+                      <button
+                        onClick={() => {
+                          setUserMenu(false);
+                          startTour();
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-phantix-700/50"
+                      >
+                        <Compass size={15} /> Take the tour
+                      </button>
                       <button
                         onClick={() => {
                           logout();
@@ -534,6 +548,9 @@ export default function Layout() {
           <span className="font-mono">Tenant #{state.org.id}</span>
         </footer>
       </div>
+
+      {/* First-visit guided tour; "Take the tour" in the account menu replays it. */}
+      {session?.authenticated && <GuidedTour steps={PLATFORM_TOUR} storageKey={TOUR_STORAGE_KEY} />}
 
       {/* Phone shell */}
       <MobileTabBar moreOpen={moreOpen} onMore={() => setMoreOpen((v) => !v)} />

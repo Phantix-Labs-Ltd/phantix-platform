@@ -6,7 +6,7 @@ import React, { useEffect } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import {
-  Activity, AlertTriangle, BellRing, BookOpen, Building2, Cable, CreditCard, Database, FlaskConical, Github,
+  Activity, AlertTriangle, BellRing, BookOpen, Building2, Cable, Compass, CreditCard, Database, FlaskConical, Github,
   KeyRound, LayoutDashboard, LayoutGrid, LifeBuoy, LogOut, Monitor, Moon, MoreHorizontal, Radar, Rocket,
   RotateCcw, ScrollText, Sparkles, Sun, Users, Wrench,
 } from "lucide-react";
@@ -15,6 +15,7 @@ import { useTheme, type ThemeMode } from "@/lib/theme";
 import { AGI_ENABLED, DEMO_MODE } from "@/lib/api";
 import { APP_URL } from "@/lib/links";
 import { cx } from "@/lib/utils";
+import { startTour } from "@/components/GuidedTour";
 
 type Dest = { to: string; label: string; icon: React.ReactNode };
 
@@ -249,6 +250,16 @@ export function MoreSheet({ open, onClose, sandbox }: { open: boolean; onClose: 
                 <a href={`${APP_URL}/dashboard`} target="_blank" rel="noreferrer" className="tap flex min-h-[52px] items-center gap-3 px-4 text-sm text-gold-300">
                   <Rocket size={17} /> Open the Command Centre
                 </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    startTour();
+                  }}
+                  className="tap flex min-h-[52px] w-full items-center gap-3 px-4 text-left text-sm text-slate-300"
+                >
+                  <Compass size={17} /> Take the tour
+                </button>
                 <NavLink to="/danger-zone" className="tap flex min-h-[52px] items-center gap-3 px-4 text-sm text-severity-critical/80">
                   <AlertTriangle size={17} /> Danger zone
                 </NavLink>
