@@ -24,6 +24,7 @@ import { MobileTabBar, MoreSheet, usePageTitle } from "@/components/MobileAppShe
 import GuidedTour, { startTour } from "@/components/GuidedTour";
 import { navAnchor, PLATFORM_TOUR, TOUR_STORAGE_KEY } from "@/lib/tour";
 import { useTableCards } from "@/lib/useTableCards";
+import { useDismiss } from "@/lib/useDismiss";
 
 type NavLeafItem = { to: string; label: string; icon: React.ReactNode };
 type NavDropdownItem = {
@@ -166,6 +167,8 @@ function OperateCountdown({ expiresAt }: { expiresAt: number }) {
 export default function Layout() {
   const { session, state, operate, lockOperate, logout, expireSession, securityDbReady, resetDemo, toast, requireDualControl, sessionLoading } = useStore();
   const [userMenu, setUserMenu] = useState(false);
+  // The account menu closes on a press outside it or on Escape.
+  const userMenuRef = useDismiss(userMenu, () => setUserMenu(false));
   const [sandboxEnrolled, setSandboxEnrolled] = useState(false);
   const { collapsed: collapsedPref, toggle: toggleSidebar } = useSidebarCollapsed();
   // Below lg the sidebar is an off-canvas drawer; the collapsed icon rail is a desktop preference only.
@@ -458,7 +461,7 @@ export default function Layout() {
               <span className="chip hidden whitespace-nowrap border-phantix-600/50 bg-phantix-800/60 text-slate-300 lg:inline-flex">{state.org.plan} plan</span>
             ) : null}
 
-            <div className="relative">
+            <div ref={userMenuRef} className="relative">
               <button
                 onClick={() => {
                   // Phones: the account lives in the More sheet.
