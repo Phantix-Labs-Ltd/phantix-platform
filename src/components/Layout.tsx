@@ -3,10 +3,10 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard, Building2, Users, Database, Wrench, CreditCard, LifeBuoy,
-  ScrollText, LogOut, Lock, Unlock, ChevronDown, ChevronLeft, ChevronRight, Timer, KeyRound, Rocket,
+  ScrollText, LogOut, ChevronRight, Timer, KeyRound, Rocket,
   RotateCcw, Sparkles, BellRing, Github, Radar, FlaskConical, Cable,
   AlertTriangle, Activity, MoreHorizontal, LayoutGrid, ArrowLeft, Menu, X,
-  Compass,
+  Compass, Check, Grip, PanelLeftClose, PanelLeftOpen, UserRound,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { useSidebarCollapsed } from "@/lib/useSidebarCollapsed";
@@ -45,9 +45,9 @@ const moreOrganizationSubItems: NavLeafItem[] = [
 ];
 
 const moreGovernanceSubItems: NavLeafItem[] = [
-  ...(AGI_ENABLED ? [{ to: "/agi", label: "Autonomous Agent", icon: <Radar size={17} /> }] : []),
-  { to: "/audit", label: "Audit Trail", icon: <ScrollText size={17} /> },
-  { to: "/agent-activity", label: "Agent activity", icon: <Activity size={17} /> },
+  ...(AGI_ENABLED ? [{ to: "/agi", label: "Agent", icon: <Radar size={17} /> }] : []),
+  { to: "/audit", label: "Audit", icon: <ScrollText size={17} /> },
+  { to: "/agent-activity", label: "Activity", icon: <Activity size={17} /> },
 ];
 
 const baseNavSections: { label: string; items: (NavLeafItem | NavDropdownItem)[] }[] = [
@@ -58,17 +58,17 @@ const baseNavSections: { label: string; items: (NavLeafItem | NavDropdownItem)[]
   {
     label: "Organization",
     items: [
-      { to: "/identity", label: "Identity and Keys", icon: <KeyRound size={17} /> },
-      { to: "/users", label: "People and Control", icon: <Users size={17} /> },
-      { to: "/connections", label: "Security Database", icon: <Database size={17} /> },
+      { to: "/identity", label: "Identity", icon: <KeyRound size={17} /> },
+      { to: "/users", label: "Access", icon: <Users size={17} /> },
+      { to: "/connections", label: "Database", icon: <Database size={17} /> },
       { to: "/applications", label: "Applications", icon: <LayoutGrid size={17} /> },
-      { type: "dropdown", label: "More Organization", icon: <MoreHorizontal size={17} />, items: moreOrganizationSubItems },
+      { type: "dropdown", label: "Accounts", icon: <MoreHorizontal size={17} />, items: moreOrganizationSubItems },
     ],
   },
   {
     label: "Commerce",
     items: [
-      { to: "/tools", label: "Tool Catalog", icon: <Wrench size={17} /> },
+      { to: "/tools", label: "Catalog", icon: <Wrench size={17} /> },
       { to: "/billing", label: "Billing", icon: <CreditCard size={17} /> },
       { to: "/support", label: "Support", icon: <LifeBuoy size={17} /> },
     ],
@@ -76,29 +76,30 @@ const baseNavSections: { label: string; items: (NavLeafItem | NavDropdownItem)[]
   {
     label: "Governance",
     items: [
-      { to: "/ai", label: "AI settings", icon: <Sparkles size={17} /> },
+      { to: "/ai", label: "AI", icon: <Sparkles size={17} /> },
       { to: "/alerts", label: "Alerts", icon: <BellRing size={17} /> },
-      { type: "dropdown", label: "More Governance", icon: <MoreHorizontal size={17} />, items: moreGovernanceSubItems },
+      { type: "dropdown", label: "Oversight", icon: <MoreHorizontal size={17} />, items: moreGovernanceSubItems },
     ],
   },
   {
     label: "Integrations",
     items: [
-      { to: "/integrations", label: "Integrations Hub", icon: <Cable size={17} /> },
+      { to: "/integrations", label: "Integrations", icon: <Cable size={17} /> },
     ],
   },
 ];
 
 /**
- * Collapsible nav group. Opens itself whenever the current route is inside the
- * group, so deep-linking to a sub-page still shows where you are.
+ * Collapsible nav group. Starts open; if the operator closes it, it reopens
+ * whenever the current route is inside the group, so deep-linking to a
+ * sub-page still shows where you are.
  */
 function NavDropdown({ label, icon, basePath, items, collapsed }: NavDropdownItem & { collapsed?: boolean }) {
   const location = useLocation();
   const groupActive = basePath
     ? location.pathname.startsWith(basePath)
     : items.some((i) => location.pathname === i.to);
-  const [open, setOpen] = useState(groupActive);
+  const [open, setOpen] = useState(true);
 
   useEffect(() => {
     if (groupActive) setOpen(true);
@@ -116,9 +117,9 @@ function NavDropdown({ label, icon, basePath, items, collapsed }: NavDropdownIte
           {icon}
           <span className="sg-hide-collapsed">{label}</span>
         </span>
-        <ChevronDown
+        <ChevronRight
           size={14}
-          className={cx("sg-hide-collapsed text-slate-500 transition-transform duration-200", open && "rotate-180")}
+          className={cx("sg-hide-collapsed text-slate-500 transition-transform duration-200", open && "rotate-90")}
         />
       </button>
       <AnimatePresence initial={false}>
@@ -136,7 +137,7 @@ function NavDropdown({ label, icon, basePath, items, collapsed }: NavDropdownIte
                   key={sub.to}
                   to={sub.to}
                   end={basePath ? sub.to === basePath : true}
-                  className={({ isActive }) => cx("nav-item !py-2", isActive && "active")}
+                  className={({ isActive }) => cx("nav-item", isActive && "active")}
                 >
                   {sub.icon}
                   <span className="sg-hide-collapsed">{sub.label}</span>
@@ -148,6 +149,26 @@ function NavDropdown({ label, icon, basePath, items, collapsed }: NavDropdownIte
       </AnimatePresence>
     </div>
   );
+}
+
+/** Whether a scroll box has content below its visible bottom edge. Rechecks on
+ *  scroll and whenever the box or one of its sections resizes (a group opening). */
+function useMoreBelow(el: HTMLElement | null): boolean {
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    if (!el) return;
+    const update = () => setMore(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    for (const child of Array.from(el.children)) observer.observe(child);
+    return () => {
+      el.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, [el]);
+  return more;
 }
 
 function OperateCountdown({ expiresAt }: { expiresAt: number }) {
@@ -168,8 +189,12 @@ function OperateCountdown({ expiresAt }: { expiresAt: number }) {
 export default function Layout() {
   const { session, state, operate, lockOperate, logout, expireSession, securityDbReady, resetDemo, toast, requireDualControl, sessionLoading } = useStore();
   const [userMenu, setUserMenu] = useState(false);
-  // The account menu closes on a press outside it or on Escape.
+  // The account and launcher menus close on a press outside them or on Escape.
   const userMenuRef = useDismiss(userMenu, () => setUserMenu(false));
+  const [launcher, setLauncher] = useState(false);
+  const launcherRef = useDismiss(launcher, () => setLauncher(false));
+  const [navEl, setNavEl] = useState<HTMLElement | null>(null);
+  const navMoreBelow = useMoreBelow(navEl);
   const [sandboxEnrolled, setSandboxEnrolled] = useState(false);
   const { collapsed: collapsedPref, toggle: toggleSidebar } = useSidebarCollapsed();
   // Below lg the sidebar is an off-canvas drawer; the collapsed icon rail is a desktop preference only.
@@ -188,6 +213,7 @@ export default function Layout() {
   useEffect(() => {
     setMobileNav(false);
     setUserMenu(false);
+    setLauncher(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -296,19 +322,25 @@ export default function Layout() {
           collapsed ? "w-[72px]" : "w-[248px]",
         )}
       >
-        <div className="flex items-center gap-3 px-4 pb-3 pt-4">
-          <BrandMark className="sg-show-collapsed h-8 w-8 shrink-0" />
-          <div className="sg-hide-collapsed flex flex-col">
-            <BrandWordmark className="h-8 self-start" />
-            <p className="mt-1 text-[12px] font-medium uppercase tracking-[0.18em] text-gold-400">Platform</p>
-          </div>
+        {/* Brand row: the lockup, the app label, and the collapse control on one line. */}
+        <div className="flex items-center gap-1.5 px-3 pb-3 pt-4">
+          <BrandMark className="sg-show-collapsed mx-1 h-8 w-8 shrink-0" />
+          <BrandWordmark className="sg-hide-collapsed h-[22px] shrink-0" />
+          <span className="sg-hide-collapsed shrink-0 rounded-md border border-gold-400/30 bg-gold-400/10 px-1.5 py-1 text-[11px] font-semibold uppercase leading-none text-gold-300">
+            Platform
+          </span>
           <button
-            onClick={toggleSidebar}
+            onClick={(e) => {
+              toggleSidebar();
+              // The rail widens while anything in it has focus, so a mouse click
+              // would hold the collapsed rail open. Keyboard users keep focus.
+              if (e.detail > 0) e.currentTarget.blur();
+            }}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="ml-auto hidden rounded-md border border-phantix-700 bg-phantix-900 p-1.5 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white lg:inline-flex"
+            className="sg-hide-collapsed ml-auto hidden shrink-0 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-phantix-800/60 hover:text-slate-100 lg:inline-flex"
           >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
           </button>
           <button
             onClick={() => setMobileNav(false)}
@@ -320,7 +352,9 @@ export default function Layout() {
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1.5 overflow-y-auto px-2.5 pb-3">
+        {/* The list fades out at the bottom edge while more of it is below. */}
+        <div className="relative min-h-0 flex-1">
+        <nav ref={setNavEl} className="h-full space-y-0.5 overflow-y-auto px-2.5 pb-3">
           {navSections.map((section) => (
             <div key={section.label} data-tour={navAnchor(section.label)}>
               <p className="nav-section-label sg-hide-collapsed">{section.label}</p>
@@ -346,7 +380,7 @@ export default function Layout() {
             <p className="nav-section-label sg-hide-collapsed">Account</p>
             <NavLink
               to="/danger-zone"
-              title="Danger zone"
+              title="Deletion"
               className={({ isActive }) =>
                 cx(
                   "nav-item",
@@ -356,29 +390,19 @@ export default function Layout() {
                 )
               }
             >
-              <AlertTriangle size={17} /> <span className="sg-hide-collapsed">Danger zone</span>
+              <AlertTriangle size={17} /> <span className="sg-hide-collapsed">Deletion</span>
             </NavLink>
           </div>
         </nav>
-
-        {/* Command Centre link */}
-        <div className="sg-hide-collapsed px-2.5 pb-2.5">
-          <a
-            href={`${APP_URL}/dashboard`}
-            target="_blank"
-            rel="noreferrer"
-            data-tour="launch-app"
-            className="flex items-center gap-2.5 rounded-md border border-gold-400/30 bg-phantix-900 p-2.5 transition-all hover:border-gold-400/50 hover:border-gold-400/60"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-400/15 text-gold-400">
-              <Rocket size={16} />
-            </span>
-            <span>
-              <span className="block text-xs font-semibold text-gold-300">Command Centre</span>
-              <span className="block text-[12px] text-slate-500">Launch the product app</span>
-            </span>
-          </a>
+          <div
+            aria-hidden="true"
+            className={cx(
+              "pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[rgb(var(--surface-sidebar))] to-transparent transition-opacity duration-200 max-lg:from-[rgb(var(--surface-card))]",
+              navMoreBelow ? "opacity-100" : "opacity-0",
+            )}
+          />
         </div>
+
       </aside>
 
       {/* ── Main ────────────────────────────────────────────── */}
@@ -394,6 +418,39 @@ export default function Layout() {
           >
             <Menu size={18} />
           </button>
+          {/* Launcher: open the product apps. Phones open them from the More sheet. */}
+          <div ref={launcherRef} className="relative hidden shrink-0 md:block">
+            <button
+              onClick={() => setLauncher((v) => !v)}
+              title="Open an application"
+              aria-label="Open an application"
+              aria-haspopup="menu"
+              aria-expanded={launcher}
+              data-tour="launch-app"
+              className="inline-flex rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white"
+            >
+              <Grip size={16} />
+            </button>
+            {launcher && (
+              <div className="absolute left-0 top-full z-50 mt-2 w-64 rounded-md border border-phantix-700 bg-phantix-900 p-1 shadow-card">
+                <a
+                  href={`${APP_URL}/dashboard`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setLauncher(false)}
+                  className="flex items-center gap-2.5 rounded px-2.5 py-2 hover:bg-phantix-800"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-400/15 text-gold-400">
+                    <Rocket size={16} />
+                  </span>
+                  <span>
+                    <span className="block text-xs font-semibold text-gold-300">Command Centre</span>
+                    <span className="block text-[12px] text-slate-500">Launch the product app</span>
+                  </span>
+                </a>
+              </div>
+            )}
+          </div>
           {location.pathname.startsWith("/docs") && (
             <>
               <button
@@ -448,19 +505,30 @@ export default function Layout() {
               <ThemeToggle />
             </span>
             {sessionLoading ? (
-              <span className="skeleton hidden h-7 w-40 rounded-md md:block" aria-hidden="true" />
+              <span className="skeleton hidden h-9 w-9 rounded-md md:block" aria-hidden="true" />
             ) : securityDbReady ? (
-              <span className="chip hidden whitespace-nowrap border-emerald-400/30 bg-emerald-400/10 text-emerald-300 md:inline-flex">
-                <Database size={12} /> Security DB · ready
+              <span
+                role="img"
+                title="Security database connected"
+                aria-label="Security database connected"
+                className="relative hidden rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 md:inline-flex"
+              >
+                <Database size={16} />
+                <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-severity-low ring-2 ring-phantix-950">
+                  <Check size={9} strokeWidth={3.5} className="text-white" />
+                </span>
               </span>
             ) : (
               <button
                 onClick={() => navigate("/connections")}
-                title="Security DB not connected"
+                title="Security database not connected. Connect it"
                 aria-label="Security database not connected. Connect it"
-                className="chip whitespace-nowrap border-severity-medium/40 bg-severity-medium/10 text-severity-medium transition-colors hover:bg-severity-medium/20"
+                className="relative inline-flex rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white"
               >
-                <Database size={12} /> <span className="hidden md:inline">Security DB · not connected</span>
+                <Database size={16} />
+                <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-severity-critical ring-2 ring-phantix-950">
+                  <X size={9} strokeWidth={3.5} className="text-white" />
+                </span>
               </button>
             )}
             {state.org.plan ? (
@@ -477,24 +545,19 @@ export default function Layout() {
                 aria-haspopup="menu"
                 aria-expanded={userMenu}
                 aria-label="Account menu"
+                title={session?.email ?? "Account"}
                 data-tour="account"
-                className="flex items-center gap-2.5 rounded-md border border-phantix-700/50 bg-phantix-900/60 py-1.5 pl-1.5 pr-2.5 hover:border-phantix-500/50"
+                className="inline-flex rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white"
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-gold-400/40 bg-phantix-850 font-display text-xs font-bold text-gold-300">
-                  {(session?.email ?? "A").slice(0, 1).toUpperCase()}
-                </span>
-                <span className="hidden text-left sm:block">
-                  <span className="block text-xs font-semibold leading-tight text-slate-200">Company account</span>
-                  <span className="block max-w-[150px] truncate text-[12px] leading-tight text-slate-500">{session?.email}</span>
-                </span>
-                <ChevronDown size={14} className="hidden text-slate-500 md:block" />
+                <UserRound size={16} />
               </button>
               <AnimatePresence>
                 {userMenu && (
                   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-md glass-bright shadow-card">
                     <div className="border-b border-phantix-700/40 px-4 py-3">
-                      <p className="text-sm font-semibold text-slate-100">{state.org.name}</p>
-                      <p className="text-xs text-slate-500">Signed in as organization admin</p>
+                      <p className="truncate text-sm font-semibold text-slate-100">{state.org.name}</p>
+                      <p className="truncate text-xs text-slate-400">{session?.email}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">Signed in as organization admin</p>
                     </div>
                     <div className="p-1.5">
                       {DEMO_MODE ? (
