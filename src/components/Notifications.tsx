@@ -7,6 +7,7 @@ import {
 import { api, API_BASE, ApiError, DEMO_MODE } from "@/lib/api";
 import { appLink } from "@/lib/links";
 import { timeAgo, cx } from "@/lib/utils";
+import { useDismiss } from "@/lib/useDismiss";
 
 // Platform copy of packages/sg-shared/src/components/AlertNotifications.tsx
 // (the Platform doesn't build against the shared package). Keep the two in
@@ -393,8 +394,11 @@ export function NotificationBell() {
     if (panelOpen) markAllRead();
   }, [panelOpen, markAllRead]);
 
+  // Pressing anywhere outside the bell or the panel closes it.
+  const ref = useDismiss(panelOpen, () => setPanelOpen(false));
+
   return (
-    <div className="relative">
+    <div ref={ref} className="relative">
       <button
         onClick={() => setPanelOpen((v) => !v)}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-phantix-700/50 bg-phantix-900 text-slate-300 transition-colors hover:border-phantix-500/50 hover:text-white"
@@ -415,7 +419,6 @@ export function NotificationBell() {
       <AnimatePresence>
         {panelOpen && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[80]" onClick={() => setPanelOpen(false)} />
             <motion.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
