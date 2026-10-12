@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { Seo } from "@/lib/useSeo";
 import { StoreProvider, ToastViewport, useStore } from "@/lib/store";
 import Layout from "@/components/Layout";
-import CookieConsent from "@/components/CookieConsent";
 import SessionExpiredOverlay from "@/components/SessionExpiredOverlay";
 import { RouteSkeleton, ShellSkeleton } from "@/components/RouteSkeleton";
 import Login from "@/pages/auth/Login";
@@ -185,7 +184,6 @@ export default function App() {
         <PlatformNotifications />
         <SessionExpiredOverlay />
         <ToastViewport />
-        <CookieConsent />
       </BrowserRouter>
       </NotificationProvider>
     </StoreProvider>

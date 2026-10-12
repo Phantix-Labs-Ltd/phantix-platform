@@ -25,6 +25,7 @@ import GuidedTour, { startTour } from "@/components/GuidedTour";
 import { navAnchor, PLATFORM_TOUR, TOUR_STORAGE_KEY } from "@/lib/tour";
 import { useTableCards } from "@/lib/useTableCards";
 import { useDismiss } from "@/lib/useDismiss";
+import { onSignedIn } from "@/lib/analytics";
 
 type NavLeafItem = { to: string; label: string; icon: React.ReactNode };
 type NavDropdownItem = {
@@ -202,6 +203,11 @@ export default function Layout() {
       return;
     }
     void loadSandboxMe().then((m) => setSandboxEnrolled(!!m?.enrolled));
+  }, [session?.authenticated]);
+
+  // Signed-in users accepted the Terms, so the Platform asks no cookie question.
+  useEffect(() => {
+    if (session?.authenticated && !DEMO_MODE) onSignedIn();
   }, [session?.authenticated]);
 
   // BETA sandbox lives in the topbar now (icon beside the theme toggle), so
