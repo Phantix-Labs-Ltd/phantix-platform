@@ -9,61 +9,14 @@ import { APP_DEMO_URL } from "@/lib/links";
 import { BrandWordmark } from "@/components/BrandLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import AuthShowcase from "@/components/AuthShowcase";
+import SubstackSubscribe from "@/components/SubstackSubscribe";
 import { PasswordInput } from "@/components/ui";
 import GithubAuthButton from "@/components/GithubAuthButton";
 
 function NewsletterField() {
-  const [email, setEmail] = useState("");
-  const [subscribed, setSubscribed] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const subscribe = () => {
-    const v = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
-      setError("Enter a valid email address.");
-      return;
-    }
-    setError(null);
-    setSubscribed(true);
-  };
-
-  return (
-    <div className="border-t border-phantix-700/40 pt-4">
-      <p className="text-[13px] font-semibold uppercase tracking-wider text-slate-400">
-        Security insights in your inbox
-      </p>
-      {subscribed ? (
-        <p className="mt-2 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs text-emerald-400">
-          You're on the list. Watch your inbox for a welcome note.
-        </p>
-      ) : (
-        <>
-          <div className="mt-2 flex gap-2">
-            <div className="relative flex-1">
-              <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                className="input !pl-9 !py-2 text-xs"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    subscribe();
-                  }
-                }}
-                placeholder="you@company.com"
-                aria-label="Newsletter email"
-              />
-            </div>
-            <button type="button" onClick={subscribe} className="btn-secondary !px-3 !py-2" aria-label="Subscribe" title="Subscribe">
-              <Send size={14} />
-            </button>
-          </div>
-          {error && <p className="mt-1.5 text-xs text-severity-critical">{error}</p>}
-        </>
-      )}
-    </div>
-  );
+  // The sign-in list is Substack's; the reader confirms there. Keeping this a
+  // thin wrapper means the address is never posted to or held by Phantix.
+  return <SubstackSubscribe source="platform-signin" />;
 }
 
 export default function Login() {

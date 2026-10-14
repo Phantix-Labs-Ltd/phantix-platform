@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { PasswordInput } from "@/components/ui";
 import { BrandWordmark } from "@/components/BrandLogo";
 import GithubAuthButton from "@/components/GithubAuthButton";
+import SubstackSubscribe from "@/components/SubstackSubscribe";
 import { BetaBanner, BetaOptIn } from "@/components/BetaSignup";
 import { errorCode } from "@/lib/api";
 import { useSignupStatus } from "@/lib/betaSignup";
@@ -126,6 +127,7 @@ export default function Register() {
               <p className="text-center text-xs text-slate-500">
                 Already registered? <Link to="/login" className="text-gold-400 hover:text-gold-300">Sign in</Link>
               </p>
+              <SubstackSubscribe source="platform-signup" />
             </motion.form>
           </div>
 
