@@ -31,6 +31,9 @@ export default function ConnectorInstallGuide({
   const [target, setTarget] = useState("");
   const targetValue = target.trim() || "<database-host>:5432";
   const tokenValue = token || "<enrollment-token>";
+  // The command is only shown once there is a real token and the writer has
+  // told us the address, so it never renders a placeholder script.
+  const ready = Boolean(token) && target.trim().length > 0;
 
   const snippet = useMemo(() => {
     if (method === "docker") {
@@ -158,6 +161,14 @@ export default function ConnectorInstallGuide({
       </Section>
 
       <Section n={3} title="Install the connector">
+        {!ready ? (
+          <p className="text-[13px] text-slate-400">
+            {!token
+              ? "The install command appears once the enrollment token has loaded."
+              : "Enter your database host and port above; the command is generated from them."}
+          </p>
+        ) : (
+          <>
         <div role="tablist" aria-label="Installation method" className="flex flex-wrap gap-1.5">
           {METHODS.map((m) => (
             <button
@@ -184,6 +195,8 @@ export default function ConnectorInstallGuide({
             : <>Create a connector above to get an enrollment token. Each token works once and expires after 15 minutes.</>}
           {" "}Behind an outbound proxy, add <code className="font-mono text-slate-300">HTTPS_PROXY=http://proxy:3128</code>.
         </p>
+          </>
+        )}
       </Section>
 
       <Section n={4} title="Confirm it is connected">
