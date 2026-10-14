@@ -9,7 +9,7 @@ import ConnectionForm, { ENGINES } from "@/components/ConnectionForm";
 import ConnectorInstallGuide from "@/components/ConnectorInstallGuide";
 import { AddConnectorForm } from "@/components/ConnectorsCard";
 import SecurityDbPrepare from "@/components/SecurityDbPrepare";
-import { listConnectors, newConnectorToken, type Connector, type ConnectorEnrollment } from "@/lib/connectors";
+import { listConnectors, getConnectorEnrollment, newConnectorToken, type Connector, type ConnectorEnrollment } from "@/lib/connectors";
 import { useStore } from "@/lib/store";
 import { useConnectionGuard } from "@/lib/useConnectionGuard";
 import { cx, timeAgo } from "@/lib/utils";
@@ -333,13 +333,27 @@ function InstallStep() {
   const { toast } = useStore();
   const location = useLocation();
   const handed = (location.state as { enrollment?: ConnectorEnrollment } | null)?.enrollment;
-  // The setup token is shown once: it arrives with the step, or a new one is
-  // issued (a refresh loses it).
+  // Idempotent: the token arrives with the step, or is read back from the API
+  // (the same live token), so a reload never falls back to a placeholder.
   const [enrollment, setEnrollment] = useState<ConnectorEnrollment | null>(handed?.connector.id === connectorId ? handed : null);
   const [issuing, setIssuing] = useState(false);
+  const [loadingEnrollment, setLoadingEnrollment] = useState(false);
   const list = useConnectors(true);
   const connector = list?.find((c) => c.id === connectorId) ?? null;
   const online = connector?.status === "online";
+
+  // Read the live token on mount. A 404 means there is none yet (used/expired),
+  // in which case the button below issues a fresh one.
+  useEffect(() => {
+    if (enrollment || online || !connectorId) return;
+    let cancelled = false;
+    setLoadingEnrollment(true);
+    getConnectorEnrollment(connectorId)
+      .then((e) => { if (!cancelled && e) setEnrollment(e); })
+      .catch(() => { /* fall back to the button */ })
+      .finally(() => { if (!cancelled) setLoadingEnrollment(false); });
+    return () => { cancelled = true; };
+  }, [connectorId, enrollment, online]);
 
   const reissue = async () => {
     setIssuing(true);
@@ -378,10 +392,18 @@ function InstallStep() {
       </div>
       {!enrollment && !online && (
         <div className="mb-5 rounded-md border border-phantix-700/50 p-4">
-          <p className="text-sm text-slate-300">The setup token is shown only once. Get a new one to fill it into the commands below.</p>
-          <button type="button" className="btn-secondary mt-3 !py-1.5 text-xs" disabled={issuing} onClick={() => void reissue()}>
-            {issuing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Get a setup token
-          </button>
+          {loadingEnrollment ? (
+            <p className="flex items-center gap-2 text-sm text-slate-300">
+              <Loader2 size={14} className="animate-spin text-gold-400" /> Loading the setup token...
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-300">No live setup token. Get one to fill it into the commands below.</p>
+              <button type="button" className="btn-secondary mt-3 !py-1.5 text-xs" disabled={issuing} onClick={() => void reissue()}>
+                {issuing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Get a setup token
+              </button>
+            </>
+          )}
         </div>
       )}
       {!online && (

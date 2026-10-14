@@ -5,7 +5,7 @@
  * so the database needs no inbound port. The admin creates one here and gets a
  * single-use enrollment token, shown once.
  */
-import { api, DEMO_MODE, delay, tokens } from "@/lib/api";
+import { api, ApiError, DEMO_MODE, delay, tokens } from "@/lib/api";
 
 export type ConnectorStatus = "pending" | "online" | "offline" | "revoked";
 
@@ -65,6 +65,23 @@ export async function createConnector(name: string): Promise<ConnectorEnrollment
 export async function newConnectorToken(id: string): Promise<ConnectorEnrollment> {
   if (DEMO_MODE) return createConnector(demo.find((c) => c.id === id)?.name ?? "Connector");
   return api.post<ConnectorEnrollment>(`/connectors/${encodeURIComponent(id)}/token`, {}, writeOpts());
+}
+
+/**
+ * The connector's current live enrollment token, or null when there is none.
+ *
+ * Read-only and idempotent: repeated calls (a reload, a second admin) return
+ * the same token instead of a placeholder. Falls back to `newConnectorToken`
+ * when null.
+ */
+export async function getConnectorEnrollment(id: string): Promise<ConnectorEnrollment | null> {
+  if (DEMO_MODE) return null;
+  try {
+    return await api.get<ConnectorEnrollment>(`/connectors/${encodeURIComponent(id)}/enrollment`);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  }
 }
 
 export async function revokeConnector(id: string): Promise<void> {
