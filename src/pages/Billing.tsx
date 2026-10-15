@@ -25,7 +25,20 @@ interface Entitlements {
 }
 interface PricingInfo { monthly_list_price_ngn: number; first_month_price_ngn: number; subsequent_monthly_price_ngn: number; yearly_price_ngn: number; first_month_discount_percent: number; }
 interface SubscriptionInfo { id: number; status: string; billing_cycle: string; grant_source: string; current_period_start: string; current_period_end: string; plan?: string; }
-interface PaymentInfo { id: number; reference: string; amount_due_ngn: number; status: string; purpose: string; discount_percent: number; created_at: string; }
+interface PaymentInfo {
+  id: number;
+  reference: string;
+  amount_due_ngn: number;
+  status: string;
+  purpose: string;
+  discount_percent: number;
+  created_at: string;
+  description?: string | null;
+  currency?: string;
+  period_start?: string | null;
+  period_end?: string | null;
+  paid_at?: string | null;
+}
 interface PlanInfo {
   key: string;
   name: string;
@@ -74,6 +87,14 @@ function normalizePayments(raw: unknown): PaymentInfo[] {
   return [];
 }
 
+/** "2026-10-01 → 2026-11-01", or the start date when there is no period. */
+function paymentPeriod(p: PaymentInfo): string {
+  if (!p.period_start) return "—";
+  const start = p.period_start.slice(0, 10);
+  const end = p.period_end ? p.period_end.slice(0, 10) : "";
+  return end ? `${start} → ${end}` : start;
+}
+
 function normalizePlans(raw: unknown): PlanInfo[] {
   if (Array.isArray(raw)) return raw as PlanInfo[];
   if (raw && typeof raw === "object" && Array.isArray((raw as { plans?: unknown }).plans)) {
@@ -98,6 +119,7 @@ export default function Billing() {
   const [credits, setCredits] = useState<CreditBalance | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [payments, setPayments] = useState<PaymentInfo[]>([]);
+  const [paymentsBusy, setPaymentsBusy] = useState(false);
   const [gatewayPublicKey, setGatewayPublicKey] = useState("");
   const [selectedCycle, setSelectedCycle] = useState<"monthly" | "yearly">("monthly");
   // Which self-serve plan is being bought. The backend prices per plan, so the
@@ -154,6 +176,18 @@ export default function Billing() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  /** Re-pull the invoice history without touching the rest of the page. */
+  const refreshPayments = useCallback(async () => {
+    setPaymentsBusy(true);
+    try {
+      setPayments(normalizePayments(await api.get<unknown>("/billing/payments")));
+    } catch {
+      /* keep the last list */
+    } finally {
+      setPaymentsBusy(false);
+    }
+  }, []);
 
   const handleVerify = useCallback(async (paymentId: number, opts?: { silent?: boolean }) => {
     try {
@@ -586,16 +620,36 @@ export default function Billing() {
         </Card>
       </motion.div>
 
-      {/* Payments history — a real invoice table, not padded list rows. */}
-      {payments.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="mt-4">
-          <CollapsibleCard defaultOpen={false} title="Payment history" subtitle={`${payments.length} invoices`}>
+      {/* Billing history — always visible, so a fresh org sees where invoices land. */}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="mt-4">
+        <CollapsibleCard
+          title="Billing history"
+          subtitle={payments.length ? `${payments.length} ${payments.length === 1 ? "invoice" : "invoices"}` : "No invoices yet"}
+          action={
+            <button
+              type="button"
+              className="btn-ghost !px-2 !py-1 !text-xs"
+              onClick={() => void refreshPayments()}
+              disabled={paymentsBusy}
+              title="Refresh billing history"
+            >
+              {paymentsBusy ? <Spinner className="h-3.5 w-3.5" /> : <RefreshCw size={14} />}
+            </button>
+          }
+        >
+          {payments.length === 0 ? (
+            <p className="text-[13px] text-slate-500">
+              No invoices yet. Subscription, credit top-up and renewal payments appear here with their
+              reference, period, amount and status.
+            </p>
+          ) : (
             <div className="-mx-4 -mb-4 overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-phantix-700/40">
                     <th className="th">Reference</th>
-                    <th className="th">Purpose</th>
+                    <th className="th">For</th>
+                    <th className="th">Period</th>
                     <th className="th">Date</th>
                     <th className="th">Amount</th>
                     <th className="th">Status</th>
@@ -606,21 +660,32 @@ export default function Billing() {
                   {payments.map((p) => (
                     <tr key={p.id} className="border-b border-phantix-800/40 last:border-0">
                       <td className="td font-mono text-xs">{p.reference}</td>
-                      <td className="td text-xs text-slate-400">{humanize(p.purpose)}{p.discount_percent ? ` · ${p.discount_percent}% off` : ""}</td>
-                      <td className="td text-xs text-slate-500">{timeAgo(p.created_at)}</td>
+                      <td className="td text-xs text-slate-400">
+                        {p.description || humanize(p.purpose)}{p.discount_percent ? ` · ${p.discount_percent}% off` : ""}
+                      </td>
+                      <td className="td text-xs text-slate-500">{paymentPeriod(p)}</td>
+                      <td className="td text-xs text-slate-500" title={p.created_at}>{timeAgo(p.paid_at || p.created_at)}</td>
                       <td className="td font-semibold">{formatNaira(p.amount_due_ngn)}</td>
                       <td className="td"><StatusBadge status={p.status} /></td>
                       <td className="td text-right">
-                        {p.status === "pending" && <button onClick={() => { setPayingId(p.id); void handleVerify(p.id); }} className="btn-primary !px-2.5 !py-1 !text-[11px]">Verify</button>}
+                        {p.status === "pending" && (
+                          <button
+                            onClick={() => { setPayingId(p.id); void handleVerify(p.id); }}
+                            disabled={payingId === p.id}
+                            className="btn-primary !px-2.5 !py-1 !text-[11px]"
+                          >
+                            {payingId === p.id ? <Spinner className="h-3 w-3" /> : "Verify"}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </CollapsibleCard>
-        </motion.div>
-      )}
+          )}
+        </CollapsibleCard>
+      </motion.div>
 
       {/* Report formats */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.16 }} className="mt-4">

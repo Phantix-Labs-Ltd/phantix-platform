@@ -31,7 +31,6 @@ export async function startPlanCheckout(opts: {
   const res = await api.post<{ payment?: { id?: number } }>(
     "/billing/subscribe",
     { billing_cycle: opts.cycle, plan: opts.plan },
-    { dualControl: true },
   );
   const paymentId = res?.payment?.id ?? null;
   if (!paymentId) return { paymentId: null, redirected: false, accessCode: null };
@@ -41,7 +40,6 @@ export async function startPlanCheckout(opts: {
   const init = await api.post<{ authorization_url?: string; access_code?: string }>(
     `/billing/payments/${paymentId}/initialize`,
     { email: opts.email, callback_url: back.toString() },
-    { dualControl: true },
   );
   if (init?.authorization_url) {
     window.location.href = init.authorization_url;
@@ -56,7 +54,7 @@ export async function startPlanCheckout(opts: {
  * not sign the user out (authClearOn401: false).
  */
 export async function verifyPayment(paymentId: number): Promise<void> {
-  await api.post(`/billing/payments/${paymentId}/verify`, {}, { dualControl: true, authClearOn401: false });
+  await api.post(`/billing/payments/${paymentId}/verify`, {}, { authClearOn401: false });
   try { sessionStorage.removeItem(PENDING_PAYMENT_KEY); } catch { /* storage unavailable */ }
 }
 
