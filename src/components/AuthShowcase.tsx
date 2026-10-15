@@ -518,7 +518,7 @@ export default function AuthShowcase() {
       ref={wrapRef}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className="auth-showcase-dark relative hidden overflow-hidden bg-phantix-950 text-slate-200 lg:flex lg:min-h-screen lg:flex-col"
+      className="auth-showcase-dark relative hidden overflow-hidden bg-phantix-950 text-slate-200 lg:flex lg:h-dvh lg:flex-col"
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-grid-faint bg-grid opacity-30 [mask-image:radial-gradient(ellipse_90%_80%_at_20%_10%,black,transparent)]" />
@@ -526,12 +526,12 @@ export default function AuthShowcase() {
         <div className="absolute -bottom-24 right-0 h-[340px] w-[340px] rounded-full bg-gold-400/5 blur-[120px]" />
       </div>
 
-      <header className="relative z-10 flex items-center gap-3 p-10 pb-6">
+      <header className="relative z-10 flex items-center gap-3 px-10 pb-4 pt-8">
         <BrandWordmark surface="dark" className="h-8" />
       </header>
 
-      <main className="relative z-10 grid flex-1 grid-cols-1 items-center gap-10 px-10 py-6 xl:grid-cols-[1.05fr_0.95fr] xl:gap-14">
-        <div key={slide.id} data-slide className="flex min-h-[360px] items-center justify-center">
+      <main className="relative z-10 grid min-h-0 flex-1 grid-cols-1 content-center items-center gap-6 overflow-hidden px-10 py-4 xl:grid-cols-[1.05fr_0.95fr] xl:gap-14">
+        <div key={slide.id} data-slide className="flex min-h-[360px] items-center justify-center [@media(max-height:820px)]:min-h-0 [@media(max-height:820px)]:scale-75">
           {slide.scene}
         </div>
 
@@ -540,12 +540,12 @@ export default function AuthShowcase() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold-400/10" style={{ color: GOLD }}>{slide.icon}</span>
             {slide.kicker}
           </div>
-          <h2 data-anim="text" className="max-w-xl font-display text-4xl font-bold leading-[1.1] text-white">{slide.title}</h2>
+          <h2 data-anim="text" className="max-w-xl font-display text-3xl font-bold xl:text-4xl leading-[1.1] text-white">{slide.title}</h2>
           <p data-anim="text" className="max-w-md text-[15px] leading-7 text-slate-300">{slide.body}</p>
         </div>
       </main>
 
-      <footer className="relative z-10 flex items-center justify-between p-10 pt-6">
+      <footer className="relative z-10 flex items-center justify-between px-10 pb-8 pt-4">
         <div className="flex items-center gap-2">
           {INSIGHTS.map((s, i) => (
             <button
