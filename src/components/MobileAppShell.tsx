@@ -1,4 +1,4 @@
-// Phone shell for the platform: a bottom tab bar with the four places an admin
+// Phone and tablet shell for the platform: a bottom tab bar with the four places an admin
 // lives (Home, People, Database, Keys) plus "More", which opens a bottom sheet of
 // every other page as app tiles. Shown below lg only; desktop keeps the sidebar.
 
@@ -82,7 +82,7 @@ export function MobileTabBar({ moreOpen, onMore }: { moreOpen: boolean; onMore: 
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-[60] border-t border-phantix-700/50 bg-[rgb(var(--surface-card)/0.97)] pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.35)] backdrop-blur-xl md:hidden"
+      className="fixed inset-x-0 bottom-0 z-[60] border-t border-phantix-700/50 bg-[rgb(var(--surface-card)/0.97)] pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:hidden"
     >
       <div className="mx-auto grid max-w-lg grid-cols-5">
         {TABS.map((t) => (
@@ -164,7 +164,7 @@ export function MoreSheet({ open, onClose, sandbox }: { open: boolean; onClose: 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm md:hidden"
+            className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm lg:hidden"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -182,7 +182,7 @@ export function MoreSheet({ open, onClose, sandbox }: { open: boolean; onClose: 
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={(_, info) => { if (info.offset.y > 90 || info.velocity.y > 500) onClose(); }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto overscroll-contain rounded-t-3xl border-t border-phantix-600/60 bg-[rgb(var(--surface-card))] pb-[calc(76px+env(safe-area-inset-bottom))] shadow-2xl md:hidden"
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[88dvh] overflow-y-auto overscroll-contain rounded-t-3xl border-t border-phantix-600/60 bg-[rgb(var(--surface-card))] pb-[calc(76px+env(safe-area-inset-bottom))] shadow-2xl md:mx-auto md:max-w-xl md:border-x lg:hidden"
           >
             {/* Drag here to close; the rest of the sheet scrolls normally. */}
             <div
