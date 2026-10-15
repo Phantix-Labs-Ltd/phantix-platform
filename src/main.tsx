@@ -16,6 +16,24 @@ bootstrapTheme();
 initAnalytics();
 loadBrandTokens();
 
+// A deploy replaces the hashed chunks. A tab still running the previous index
+// then asks for a chunk that no longer exists, the dynamic import rejects, and
+// React surfaces a confusing "Lazy" crash. Vite fires `vite:preloadError` for
+// exactly this: reload once to pick up the new build (guarded so a genuinely
+// missing chunk cannot loop the tab).
+window.addEventListener("vite:preloadError", (event) => {
+  event.preventDefault();
+  const key = "phantix_chunk_reload_at";
+  try {
+    const last = Number(sessionStorage.getItem(key) || 0);
+    if (Date.now() - last < 10_000) return;
+    sessionStorage.setItem(key, String(Date.now()));
+  } catch {
+    /* storage unavailable: reload anyway */
+  }
+  window.location.reload();
+});
+
 const rootEl = document.getElementById("root");
 if (!rootEl) {
   document.body.innerHTML = "<p style='padding:2rem;font-family:system-ui'>Missing #root element.</p>";
