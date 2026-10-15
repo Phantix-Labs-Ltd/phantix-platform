@@ -109,32 +109,34 @@ export default function Login() {
   const lockedMessage = () => (retryIn > 0 ? `Too many failed attempts. Try again in ${retryIn}s.` : error ?? "");
 
   return (
-    <div className="relative flex min-h-screen overflow-hidden bg-phantix-950">
+    <div className="relative flex min-h-dvh overflow-hidden bg-phantix-950 lg:h-dvh">
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute inset-0 bg-grid-faint bg-grid [mask-image:radial-gradient(ellipse_70%_60%_at_50%_40%,black,transparent)]" />
         <div className="absolute left-1/2 top-1/3 h-[420px] w-[680px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-phantix-600/20 blur-[130px]" />
       </div>
 
-      <div className="relative z-10 w-full lg:grid lg:min-h-screen lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+      <div className="relative z-10 w-full lg:grid lg:h-dvh lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
         <AuthShowcase />
 
-        <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10 bg-phantix-850 lg:border-l lg:border-phantix-700">
-          <div className="absolute right-6 top-6 z-20"><ThemeToggle /></div>
+        {/* Fits the viewport: the page itself never scrolls; this column scrolls only
+            when the window is shorter than the compact form. */}
+        <div className="relative flex min-h-dvh flex-col items-center px-4 py-4 bg-phantix-850 lg:h-dvh lg:min-h-0 lg:overflow-y-auto lg:border-l lg:border-phantix-700">
+          <div className="absolute right-4 top-4 z-20"><ThemeToggle /></div>
 
           <motion.div
             initial={{ opacity: 0, y: 26 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-            className="w-full max-w-[420px]"
+            className="my-auto w-full max-w-[420px]"
           >
-            <div className="mb-8 text-center">
+            <div className="mb-5 text-center [@media(max-height:820px)]:mb-3">
               <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.7, delay: 0.1 }} className="mx-auto">
-                <BrandWordmark className="mx-auto block h-12" />
+                <BrandWordmark className="mx-auto block h-10 [@media(max-height:820px)]:h-8" />
               </motion.div>
               <p className="mt-1.5 text-sm text-slate-400">Company or admin sign-in</p>
             </div>
 
-            <div className="card p-7">
+            <div className="card p-6 [@media(max-height:820px)]:p-5">
               {error && (
                 <div role="alert" className="mb-4 flex items-start gap-2.5 rounded-md border border-severity-critical/30 bg-severity-critical/10 px-3.5 py-3">
                   <AlertTriangle size={15} className="mt-0.5 shrink-0 text-severity-critical" />
@@ -143,7 +145,7 @@ export default function Login() {
               )}
               <AnimatePresence mode="wait">
                 {stage === "password" ? (
-                  <motion.form key="pw" initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -14 }} onSubmit={submit} className="space-y-4">
+                  <motion.form key="pw" initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -14 }} onSubmit={submit} className="space-y-3.5 [@media(max-height:820px)]:space-y-3">
                     <GithubAuthButton intent="login" onError={setError} />
                     <div>
                       <label className="label">Primary (company) email</label>
@@ -151,7 +153,7 @@ export default function Login() {
                         <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                         <input className="input !pl-10" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="owner@company.com" />
                       </div>
-                      <p className="mt-1 text-[12px] text-slate-500">
+                      <p className="mt-1 text-[12px] text-slate-500 [@media(max-height:820px)]:hidden">
                         Platform access is reserved for the organization's primary user. Everyone
                         else works in the applications.
                       </p>
@@ -169,13 +171,13 @@ export default function Login() {
                     <button className="btn-primary w-full !py-3" disabled={busy || retryIn > 0}>
                       {busy ? "Checking..." : retryIn > 0 ? `Try again in ${retryIn}s` : "Continue"} {retryIn === 0 && <ArrowRight size={15} />}
                     </button>
-                    <p className="text-center text-xs text-slate-500">
+                    <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
                       <Link to="/password-reset" className="text-gold-400 hover:text-gold-300">Forgot password?</Link>
-                    </p>
-                    <p className="text-center text-xs text-slate-500">
-                      New tenant?{" "}
-                      <Link to="/register" className="text-gold-400 hover:text-gold-300">Create a free account</Link>
-                    </p>
+                      <span>
+                        New tenant?{" "}
+                        <Link to="/register" className="text-gold-400 hover:text-gold-300">Create an account</Link>
+                      </span>
+                    </div>
                     <NewsletterField />
                     <p className="text-center text-[13px] text-slate-600">
                       <Link to="/terms" className="hover:text-slate-400">Terms of Service</Link>
@@ -224,7 +226,7 @@ export default function Login() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9 }}
-              className="mt-4 flex flex-col items-center gap-1.5 text-center"
+              className="mt-3 flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-center [@media(max-height:680px)]:hidden"
             >
               <p className="text-xs text-slate-500">Looking for the product demo?</p>
               <a
