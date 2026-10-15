@@ -4,9 +4,9 @@ import { FlaskConical, Lock } from "lucide-react";
 import type { SignupStatus } from "@/lib/betaSignup";
 
 /** Shown above a sign-up form while the beta is on. */
-export function BetaBanner({ status }: { status: SignupStatus }) {
+export function BetaBanner({ status, className = "mb-5" }: { status: SignupStatus; className?: string }) {
   return (
-    <div role="note" className="mb-5 rounded-md border border-gold-400/30 bg-gold-400/[0.06] p-4">
+    <div role="note" className={`${className} rounded-md border border-gold-400/30 bg-gold-400/[0.06] p-4`}>
       <p className="flex items-center gap-2 text-sm font-semibold text-white">
         <FlaskConical size={15} className="text-gold-400" /> Beta: {status.remaining} of {status.target} places left
       </p>

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, Building2, Users, Database, Wrench, CreditCard, LifeBuoy,
   ScrollText, LogOut, ChevronRight, Timer, KeyRound, Rocket,
   RotateCcw, Sparkles, BellRing, Github, Radar, FlaskConical, Cable,
-  AlertTriangle, Activity, MoreHorizontal, LayoutGrid, ArrowLeft, Menu, X,
+  AlertTriangle, Activity, MoreHorizontal, LayoutGrid, ArrowLeft, X,
   Compass, Check, Grip, PanelLeftClose, PanelLeftOpen, UserRound,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
@@ -197,12 +197,11 @@ export default function Layout() {
   const navMoreBelow = useMoreBelow(navEl);
   const [sandboxEnrolled, setSandboxEnrolled] = useState(false);
   const { collapsed: collapsedPref, toggle: toggleSidebar } = useSidebarCollapsed();
-  // Below lg the sidebar is an off-canvas drawer; the collapsed icon rail is a desktop preference only.
-  const [mobileNav, setMobileNav] = useState(false);
-  const collapsed = collapsedPref && !mobileNav;
+  // The sidebar is desktop-only (lg and up); below that the tab bar and More sheet navigate.
+  const collapsed = collapsedPref;
   const location = useLocation();
   const navigate = useNavigate();
-  // Phones: bottom tab bar + "More" sheet instead of the sidebar drawer.
+  // Phones and tablets: bottom tab bar + "More" sheet instead of the sidebar.
   const [moreOpen, setMoreOpen] = useState(false);
   const closeMore = React.useCallback(() => setMoreOpen(false), []);
   const pageTitle = usePageTitle();
@@ -211,17 +210,9 @@ export default function Layout() {
   useTableCards(mainEl);
 
   useEffect(() => {
-    setMobileNav(false);
     setUserMenu(false);
     setLauncher(false);
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (!mobileNav) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileNav(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [mobileNav]);
 
   useEffect(() => {
     if (!session?.authenticated) {
@@ -303,22 +294,13 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen">
-      {mobileNav && (
-        <div
-          className="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm lg:hidden"
-          onClick={() => setMobileNav(false)}
-          aria-hidden="true"
-        />
-      )}
       {/* ── Sidebar ─────────────────────────────────────────── */}
       <aside
         id="platform-sidebar"
         data-collapsed={collapsed ? "" : undefined}
         className={cx(
-          // Below lg the sidebar is a drawer over the page: an opaque, raised
-          // surface (the black desktop rail colour blended into the page).
-          "sg-sidebar fixed inset-y-0 left-0 z-50 flex flex-col border-r border-phantix-700/40 bg-[rgb(var(--surface-sidebar))] transition-transform duration-200 max-lg:border-phantix-600/60 max-lg:bg-[rgb(var(--surface-card))] lg:z-40 lg:translate-x-0",
-          mobileNav ? "translate-x-0 shadow-2xl" : "-translate-x-full",
+          // Desktop only: below lg the bottom tab bar and More sheet navigate.
+          "sg-sidebar fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-phantix-700/40 bg-[rgb(var(--surface-sidebar))] lg:flex",
           collapsed ? "w-[72px]" : "w-[248px]",
         )}
       >
@@ -341,14 +323,6 @@ export default function Layout() {
             className="sg-hide-collapsed ml-auto hidden shrink-0 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-phantix-800/60 hover:text-slate-100 lg:inline-flex"
           >
             {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-          </button>
-          <button
-            onClick={() => setMobileNav(false)}
-            title="Close navigation"
-            aria-label="Close navigation"
-            className="ml-auto rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white lg:hidden"
-          >
-            <X size={16} />
           </button>
         </div>
 
@@ -408,16 +382,6 @@ export default function Layout() {
       {/* ── Main ────────────────────────────────────────────── */}
       <div className={cx("flex min-h-screen min-w-0 flex-1 flex-col", collapsedPref ? "lg:ml-[72px]" : "lg:ml-[248px]")}>
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-phantix-700/40 bg-phantix-950/80 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl sm:gap-3 sm:px-6">
-          {/* Phones navigate with the bottom tab bar; the drawer stays for mid-size screens. */}
-          <button
-            onClick={() => setMobileNav(true)}
-            aria-label="Open navigation"
-            aria-controls="platform-sidebar"
-            aria-expanded={mobileNav}
-            className="hidden shrink-0 rounded-md border border-phantix-700 bg-phantix-900 p-2 text-slate-400 transition-colors hover:border-phantix-600 hover:text-white md:inline-flex lg:hidden"
-          >
-            <Menu size={18} />
-          </button>
           {/* Launcher: open the product apps. Phones open them from the More sheet. */}
           <div ref={launcherRef} className="relative hidden shrink-0 md:block">
             <button
@@ -600,7 +564,7 @@ export default function Layout() {
         </header>
 
         {/* Bottom padding keeps content clear of the phone tab bar. */}
-        <main ref={setMainEl} className="min-w-0 flex-1 px-4 pb-[calc(88px+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:py-6 lg:px-8">
+        <main ref={setMainEl} className="min-w-0 flex-1 px-4 pb-[calc(88px+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:pt-6 lg:px-8 lg:pb-6">
           {/* The one content measure for this app: pages fill it, and 1600px
               stops an ultrawide display stretching a table across the glass. */}
           <div className="mx-auto w-full min-w-0 max-w-[1600px]">
@@ -615,7 +579,7 @@ export default function Layout() {
           </div>
         </main>
 
-        <footer className="hidden flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-phantix-700/30 px-4 py-4 text-[13px] text-slate-600 sm:px-8 md:flex">
+        <footer className="hidden flex-wrap items-center justify-between gap-x-6 gap-y-1 border-t border-phantix-700/30 px-4 py-4 text-[13px] text-slate-600 sm:px-8 lg:flex">
           <span>SecureGraph Platform · organization management --- keys and people live here; product operations live in the Command Centre</span>
           <span className="font-mono">Tenant #{state.org.id}</span>
         </footer>

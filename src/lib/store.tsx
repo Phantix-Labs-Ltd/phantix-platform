@@ -2755,7 +2755,7 @@ export function ToastViewport() {
   const { toasts, dismissToast } = useStore();
   return (
     // Phones: full width, just above the bottom tab bar. Wider: bottom-right corner.
-    <div className="fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[100] flex flex-col gap-2 md:inset-x-auto md:bottom-5 md:right-5 md:w-[360px]">
+    <div className="fixed inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] z-[100] flex flex-col gap-2 md:inset-x-auto md:right-5 md:w-[360px] lg:bottom-5">
       <AnimatePresence>
         {toasts.map((t) => (
           <motion.div

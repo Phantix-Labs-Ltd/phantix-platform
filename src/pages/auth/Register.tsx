@@ -57,24 +57,26 @@ export default function Register() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
-      <div className="pointer-events-none absolute inset-0">
+    // Fits the viewport: the page never grows past the window; it scrolls inside
+    // only when the window is shorter than the compact form.
+    <div className="relative flex h-dvh flex-col overflow-y-auto overflow-x-hidden px-4 py-4">
+      <div className="pointer-events-none fixed inset-0">
         <div className="absolute inset-0 bg-grid-faint bg-grid [mask-image:radial-gradient(ellipse_70%_60%_at_50%_40%,black,transparent)]" />
         <div className="absolute left-1/4 top-1/4 h-[420px] w-[600px] rounded-full bg-phantix-600/20 blur-[130px]" />
       </div>
 
-      <div className="relative grid w-full max-w-5xl grid-cols-1 items-center gap-10 lg:grid-cols-2">
+      <div className="relative m-auto grid w-full max-w-5xl grid-cols-1 items-center gap-10 lg:grid-cols-2">
         {/* Pitch */}
         <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} className="hidden lg:block">
           <BrandWordmark className="h-12" />
-          <h1 className="mt-6 font-display text-4xl font-bold leading-tight tracking-tight text-white">
+          <h1 className="mt-6 [@media(max-height:760px)]:mt-4 font-display text-3xl font-bold leading-tight tracking-tight text-white xl:text-4xl">
             See your attack surface in minutes
           </h1>
           <p className="mt-4 max-w-md text-[15px] leading-7 text-slate-400">
             Create an account, enter a domain or connect GitHub, and a passive Quick Scan shows what
             an attacker sees --- before you set anything else up.
           </p>
-          <div className="mt-8 space-y-3.5">
+          <div className="mt-8 space-y-3.5 [@media(max-height:760px)]:mt-5 [@media(max-height:760px)]:space-y-2.5">
             {[
               { icon: <ShieldCheck size={16} />, text: "Privacy-first: security data lives only in your dedicated database" },
               { icon: <Database size={16} />, text: "You bring the database --- SecureGraph writes nothing anywhere else" },
@@ -86,25 +88,28 @@ export default function Register() {
               </div>
             ))}
           </div>
+          {/* Wide screens: the beta note sits with the pitch so the form fits the window. */}
+          {beta && status && <BetaBanner status={status} className="mt-8 max-w-md [@media(max-height:760px)]:mt-5" />}
         </motion.div>
 
         {/* Form */}
         <motion.div initial={{ opacity: 0, y: 26 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.65, delay: 0.1 }}>
-          <div className="card p-7">
-            {beta && status && <BetaBanner status={status} />}
-            <h2 className="font-display text-2xl font-bold text-white">Create your account</h2>
-            <p className="mt-1.5 text-sm text-slate-400">Free plan · no card · about a minute.</p>
+          <div className="card p-6 [@media(max-height:760px)]:p-5">
+            {beta && status && <BetaBanner status={status} className="mb-5 lg:hidden" />}
+            <h2 className="font-display text-xl font-bold text-white">Create your account</h2>
+            <p className="mt-1 text-sm text-slate-400 [@media(max-height:700px)]:hidden">Free plan · no card · we email a 6-digit code to confirm.</p>
 
-            <motion.form onSubmit={submit} {...slide} className="mt-6 space-y-4">
+            <motion.form onSubmit={submit} {...slide} className="mt-4 space-y-3.5 [@media(max-height:760px)]:mt-3 [@media(max-height:760px)]:space-y-2.5">
               <GithubAuthButton intent="signup" onError={setError} />
-              <div>
-                <label className="label" htmlFor="reg-company">Company name</label>
-                <input id="reg-company" className="input" autoComplete="organization" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Company" />
-              </div>
-              <div>
-                <label className="label" htmlFor="reg-email">Work email</label>
-                <input id="reg-email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@yourcompany.com" />
-                <p className="mt-1.5 text-[13px] text-slate-500">We send a 6-digit code to confirm it.</p>
+              <div className="grid gap-3.5 sm:grid-cols-2 sm:gap-3">
+                <div>
+                  <label className="label" htmlFor="reg-company">Company name</label>
+                  <input id="reg-company" className="input" autoComplete="organization" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your Company" />
+                </div>
+                <div>
+                  <label className="label" htmlFor="reg-email">Work email</label>
+                  <input id="reg-email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@yourcompany.com" />
+                </div>
               </div>
               <div>
                 <label className="label" htmlFor="reg-password">Password</label>
@@ -127,7 +132,7 @@ export default function Register() {
               <p className="text-center text-xs text-slate-500">
                 Already registered? <Link to="/login" className="text-gold-400 hover:text-gold-300">Sign in</Link>
               </p>
-              <SubstackSubscribe source="platform-signup" />
+              <SubstackSubscribe source="platform-signup" className="[@media(max-height:760px)]:hidden" />
             </motion.form>
           </div>
 
