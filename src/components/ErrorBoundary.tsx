@@ -5,6 +5,10 @@ import { tokens } from "@/lib/api";
 type Props = { children: React.ReactNode };
 type State = { error: Error | null; info: React.ErrorInfo | null };
 
+/** A bundle/chunk that no longer exists because the app was redeployed. */
+const CHUNK_ERROR_RE =
+  /Failed to fetch dynamically imported module|Importing a module script failed|dynamically imported module|Loading chunk \S+ failed|ChunkLoadError|error loading dynamically imported module/i;
+
 export default class ErrorBoundary extends React.Component<Props, State> {
   state: State = { error: null, info: null };
 
@@ -20,6 +24,31 @@ export default class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.error) {
+      // A stale tab after a deploy: the chunk it wants is gone. Reloading once
+      // fetches the new build; clearing the session here would be needless (and
+      // alarming) since auth is fine.
+      if (CHUNK_ERROR_RE.test(this.state.error.message)) {
+        return (
+          <div className="flex min-h-screen items-center justify-center bg-phantix-950 text-slate-200">
+            <div className="card w-full max-w-md p-8 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-gold-400/15">
+                <RefreshCw size={22} className="text-gold-400" />
+              </div>
+              <h1 className="text-lg font-semibold text-white">A new version is available</h1>
+              <p className="mt-1.5 text-sm text-slate-400">
+                This tab is running an older build. Reload to continue — you stay signed in.
+              </p>
+              <button
+                type="button"
+                className="btn-primary mt-5 w-full"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw size={14} /> Reload
+              </button>
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="flex min-h-screen items-center justify-center bg-phantix-950 text-slate-200">
           <div className="card w-full max-w-xl p-8">
