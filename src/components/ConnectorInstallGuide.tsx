@@ -38,6 +38,11 @@ export default function ConnectorInstallGuide({
   const snippet = useMemo(() => {
     if (method === "docker") {
       return [
+        "# Remove any earlier connector and its enrollment state, so the",
+        "# single-use token below is redeemed fresh (a used token is refused).",
+        "docker rm -f securegraph-connector >/dev/null 2>&1 || true",
+        "docker volume rm securegraph-connector >/dev/null 2>&1 || true",
+        "",
         "docker run -d --name securegraph-connector --restart unless-stopped \\",
         "  -v securegraph-connector:/var/lib/sg-connector \\",
         `  -e SG_API_URL=${apiUrl} \\`,
@@ -48,6 +53,8 @@ export default function ConnectorInstallGuide({
     }
     if (method === "compose") {
       return [
+        "# Remove a previous connector and its state volume first:",
+        "#   docker compose down -v",
         "services:",
         "  securegraph-connector:",
         `    image: ${image}`,
@@ -64,6 +71,8 @@ export default function ConnectorInstallGuide({
       ].join("\n");
     }
     return [
+      "# Remove a previous install and its state first:",
+      "#   kubectl delete -f securegraph-connector.yaml --ignore-not-found",
       "apiVersion: v1",
       "kind: Secret",
       "metadata:",
@@ -189,6 +198,11 @@ export default function ConnectorInstallGuide({
         <p className="mt-2 text-[12px] text-slate-500">{METHODS.find((m) => m.id === method)?.hint}</p>
         <CodeBlock text={snippet} />
         <p className="mt-1.5 text-[13px] text-slate-400">{runLine}</p>
+        <p className="mt-1 text-[12px] text-slate-500">
+          Already installed? Check without changing anything:{" "}
+          <code className="font-mono text-slate-300">docker run --rm -v securegraph-connector:/var/lib/sg-connector {image} status</code>.{" "}
+          It prints the connector id, gateway and certificate expiry, or that nothing is installed.
+        </p>
         <p className="mt-1 text-[12px] text-slate-500">
           {token
             ? <>The enrollment token works once{expiresLabel ? ` and expires ${expiresLabel}` : ""}. After the first start the connector keeps its certificate in the volume, so restarts do not need it.</>
