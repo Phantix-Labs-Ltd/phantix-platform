@@ -58,7 +58,7 @@ export const PLAN_CHOICES: Array<{
       "Everything in Starter",
       "Continuous pentest and pull request review",
       "Multi-cloud and Kubernetes posture",
-      "20,000 AI credits per month",
+      "10,000 AI credits per month",
     ],
   },
 ];
