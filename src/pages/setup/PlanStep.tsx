@@ -21,8 +21,9 @@ interface Subscription { status?: string; plan?: string }
  *
  * Free continues straight on. Starter and Growth go to Paystack checkout
  * ("Add payment") and come back here, where the payment is verified before
- * moving on. With billing enforcement off (staging, development) every
- * application is open anyway, so the step skips itself.
+ * moving on. The step shows whenever a payment can be taken: billing
+ * enforcement is on, or the Paystack gateway is configured (staging runs
+ * Paystack test mode). It skips itself only when neither is true.
  */
 export default function PlanStep() {
   const { state, session, toast, requireDualControl } = useStore();
@@ -40,12 +41,13 @@ export default function PlanStep() {
     started.current = true;
     if (DEMO_MODE) { setPhase("choose"); return; }
     void (async () => {
-      const [ent, planRes, sub] = await Promise.all([
+      const [ent, planRes, sub, gateway] = await Promise.all([
         api.get<Entitlements>("/billing/entitlements").catch(() => null),
         api.get<unknown>("/billing/plans").catch(() => null),
         api.get<Subscription>("/billing/subscription").catch(() => null),
+        api.get<{ configured?: boolean }>("/billing/gateway").catch(() => null),
       ]);
-      if (ent?.billing_enforcement?.enabled !== true) {
+      if (ent?.billing_enforcement?.enabled !== true && gateway?.configured !== true) {
         navigate(APPLICATIONS_STEP, { replace: true });
         return;
       }

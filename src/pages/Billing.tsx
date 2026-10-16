@@ -49,6 +49,14 @@ interface PlanInfo {
   features?: string[];
 }
 interface CreditBundle { credits: number; price_ngn?: number | null; currency?: string }
+/** How a Naira top-up converts to credits. The backend owns the rate. */
+interface TopUpOptions {
+  presets_ngn: number[];
+  min_ngn: number;
+  max_ngn: number;
+  ngn_per_credit: number;
+  preset_credits?: Record<string, number>;
+}
 interface CreditBalance {
   buckets: Record<string, number>;
   total: number;
@@ -60,7 +68,11 @@ interface CreditBalance {
   low?: boolean;
   top_up_required?: boolean;
   bundles: CreditBundle[];
+  top_up_options?: TopUpOptions | null;
 }
+
+/** Amounts and bounds shown before the balance loads. No rate here: credits are previewed only from the backend's. */
+const TOPUP_DEFAULTS = { presets_ngn: [5_000, 10_000, 20_000, 30_000, 50_000], min_ngn: 5_000, max_ngn: 1_000_000 };
 
 const demoEntitlements: Entitlements = { billing_enforcement: { enabled: true, mode: "auto", environment: "production" }, premium_active: false, full_access_coupon: null, subscription: null, packs: [], message: "Dev mode" };
 const demoPricing: PricingInfo = { monthly_list_price_ngn: 9900, first_month_price_ngn: 4950, subsequent_monthly_price_ngn: 9900, yearly_price_ngn: 99000, first_month_discount_percent: 50 };
@@ -72,11 +84,8 @@ const demoCredits: CreditBalance = {
   plan: "starter",
   plan_name: "Starter",
   ai_credits_mo: 3000,
-  bundles: [
-    { credits: 500, price_ngn: 5000, currency: "NGN" },
-    { credits: 2000, price_ngn: 18000, currency: "NGN" },
-    { credits: 5000, price_ngn: 40000, currency: "NGN" },
-  ],
+  bundles: [],
+  top_up_options: { ...TOPUP_DEFAULTS, ngn_per_credit: 6 },
 };
 
 function normalizePayments(raw: unknown): PaymentInfo[] {
@@ -138,7 +147,9 @@ export default function Billing() {
   const [showCoupon, setShowCoupon] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const [topUpBusy, setTopUpBusy] = useState<number | null>(null);
+  const [topUpBusy, setTopUpBusy] = useState<number | "custom" | null>(null);
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customAmount, setCustomAmount] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -262,14 +273,15 @@ export default function Billing() {
     finally { setBusy(false); }
   };
 
-  const handleCreditTopUp = async (bundle: number) => {
+  /** Buy credits worth `amountNgn`. The backend works out the credits and invoices the amount. */
+  const handleCreditTopUp = async (amountNgn: number, busyKey: number | "custom" = amountNgn) => {
     if (!(await requireDualControl("Buying AI credits requires a dual-control operate session."))) return;
-    setTopUpBusy(bundle);
+    setTopUpBusy(busyKey);
     try {
       const res = await api.post<any>(
         "/billing/credits/top-up/checkout",
         {
-          bundle,
+          amount_ngn: amountNgn,
           email: session?.email || state.org.email || "",
           callback_url: `${window.location.origin}/billing`,
         },
@@ -352,13 +364,25 @@ export default function Billing() {
   ];
   const canDownload = (fmt: string) => !enforcementOn || isPremium || freeFormats.has(fmt.toLowerCase());
 
-  const creditBundles = credits?.bundles?.length
-    ? credits.bundles
-    : [
-        { credits: 500, price_ngn: undefined },
-        { credits: 2000, price_ngn: undefined },
-        { credits: 5000, price_ngn: undefined },
-      ];
+  const topUp = credits?.top_up_options ?? null;
+  const topUpPresets = topUp?.presets_ngn?.length ? topUp.presets_ngn : TOPUP_DEFAULTS.presets_ngn;
+  const topUpMin = topUp?.min_ngn ?? TOPUP_DEFAULTS.min_ngn;
+  const topUpMax = topUp?.max_ngn ?? TOPUP_DEFAULTS.max_ngn;
+  /** Credits an amount buys at the backend's rate; null until the backend has said. */
+  const creditsFor = (ngn: number): number | null => {
+    const preset = topUp?.preset_credits?.[String(ngn)];
+    if (preset != null) return preset;
+    return topUp?.ngn_per_credit ? Math.floor(ngn / topUp.ngn_per_credit) : null;
+  };
+  const customNgn = Number(customAmount || 0);
+  const customError = !customAmount
+    ? null
+    : customNgn < topUpMin
+      ? `Minimum is ${formatNaira(topUpMin)}`
+      : customNgn > topUpMax
+        ? `Maximum is ${formatNaira(topUpMax)}`
+        : null;
+  const customCredits = customAmount && !customError ? creditsFor(customNgn) : null;
 
   // Per-tier pricing for the comparison row. Only Starter carries the
   // first-month promo (from /billing/pricing); every other paid tier prices
@@ -601,21 +625,78 @@ export default function Billing() {
                 <span className="text-xs text-slate-500">Balance unavailable. Refresh after you sign in with an organization session.</span>
               )}
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {creditBundles.map((b) => (
-                <button
-                  key={b.credits}
-                  type="button"
-                  disabled={topUpBusy != null}
-                  onClick={() => void handleCreditTopUp(b.credits)}
-                  className="btn-secondary !py-1.5 text-xs"
-                >
-                  {topUpBusy === b.credits ? <Spinner className="h-3.5 w-3.5" /> : (
-                    <>+{b.credits.toLocaleString()}{b.price_ngn != null ? ` · ${formatNaira(b.price_ngn)}` : ""}</>
-                  )}
-                </button>
-              ))}
+          </div>
+
+          {/* Top up by amount: the backend converts Naira to credits at its own rate. */}
+          <div className="mt-3 border-t border-phantix-700/40 pt-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Top up</p>
+              {topUp?.ngn_per_credit ? (
+                <p className="text-[12px] text-slate-500">{formatNaira(topUp.ngn_per_credit)} per credit · top-ups never expire</p>
+              ) : null}
             </div>
+            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
+              {topUpPresets.map((ngn) => {
+                const c = creditsFor(ngn);
+                return (
+                  <button
+                    key={ngn}
+                    type="button"
+                    disabled={topUpBusy != null}
+                    onClick={() => void handleCreditTopUp(ngn)}
+                    className="btn-secondary !flex-col !items-center !gap-0 !py-2 text-xs"
+                  >
+                    {topUpBusy === ngn ? <Spinner className="h-3.5 w-3.5" /> : (
+                      <>
+                        <span className="font-semibold text-slate-100">{formatNaira(ngn)}</span>
+                        {c != null && <span className="text-[11px] text-slate-500">{c.toLocaleString()} credits</span>}
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                disabled={topUpBusy != null}
+                onClick={() => setCustomOpen((v) => !v)}
+                aria-expanded={customOpen}
+                className={cx("btn-secondary !flex-col !items-center !gap-0 !py-2 text-xs", customOpen && "!border-gold-400/50 text-gold-300")}
+              >
+                <span className="font-semibold">Custom</span>
+                <span className="text-[11px] text-slate-500">From {formatNaira(topUpMin)}</span>
+              </button>
+            </div>
+            {customOpen && (
+              <form
+                className="mt-2 flex flex-wrap items-start gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!customError && customNgn > 0) void handleCreditTopUp(customNgn, "custom");
+                }}
+              >
+                <div className="min-w-[12rem] flex-1">
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-500">₦</span>
+                    <input
+                      className="input !pl-7"
+                      inputMode="numeric"
+                      autoFocus
+                      value={customAmount ? customNgn.toLocaleString() : ""}
+                      onChange={(e) => setCustomAmount(e.target.value.replace(/\D/g, "").slice(0, 7))}
+                      placeholder={`${topUpMin.toLocaleString()} – ${topUpMax.toLocaleString()}`}
+                      aria-label="Custom top-up amount in Naira"
+                      aria-invalid={Boolean(customError)}
+                    />
+                  </div>
+                  <p className={cx("mt-1 text-[12px]", customError ? "text-severity-critical" : "text-slate-500")}>
+                    {customError ?? (customCredits != null ? `You get ${customCredits.toLocaleString()} credits` : "Enter an amount in Naira")}
+                  </p>
+                </div>
+                <button type="submit" className="btn-primary !py-2 text-xs" disabled={topUpBusy != null || !customAmount || Boolean(customError)}>
+                  {topUpBusy === "custom" ? <Spinner className="h-3.5 w-3.5" /> : <>Buy {customAmount && !customError ? formatNaira(customNgn) : "credits"}</>}
+                </button>
+              </form>
+            )}
           </div>
         </Card>
       </motion.div>
@@ -643,8 +724,10 @@ export default function Billing() {
               reference, period, amount and status.
             </p>
           ) : (
-            <div className="-mx-4 -mb-4 overflow-x-auto">
-              <table className="w-full">
+            // The card body clips its overflow (it animates open), so the table
+            // stays inside the padding and scrolls sideways on its own when narrow.
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[44rem]">
                 <thead>
                   <tr className="border-b border-phantix-700/40">
                     <th className="th">Reference</th>
@@ -659,14 +742,14 @@ export default function Billing() {
                 <tbody>
                   {payments.map((p) => (
                     <tr key={p.id} className="border-b border-phantix-800/40 last:border-0">
-                      <td className="td font-mono text-xs">{p.reference}</td>
-                      <td className="td text-xs text-slate-400">
+                      <td className="td whitespace-nowrap font-mono text-xs">{p.reference}</td>
+                      <td className="td min-w-[14rem] text-xs text-slate-400">
                         {p.description || humanize(p.purpose)}{p.discount_percent ? ` · ${p.discount_percent}% off` : ""}
                       </td>
-                      <td className="td text-xs text-slate-500">{paymentPeriod(p)}</td>
-                      <td className="td text-xs text-slate-500" title={p.created_at}>{timeAgo(p.paid_at || p.created_at)}</td>
-                      <td className="td font-semibold">{formatNaira(p.amount_due_ngn)}</td>
-                      <td className="td"><StatusBadge status={p.status} /></td>
+                      <td className="td whitespace-nowrap text-xs text-slate-500">{paymentPeriod(p)}</td>
+                      <td className="td whitespace-nowrap text-xs text-slate-500" title={p.created_at}>{timeAgo(p.paid_at || p.created_at)}</td>
+                      <td className="td whitespace-nowrap font-semibold">{formatNaira(p.amount_due_ngn)}</td>
+                      <td className="td whitespace-nowrap"><StatusBadge status={p.status} /></td>
                       <td className="td text-right">
                         {p.status === "pending" && (
                           <button
