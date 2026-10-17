@@ -277,11 +277,46 @@ function sanitizeDetailCopy(raw: string): string | null {
  * state is at fault and the text carries no internal detail; otherwise the
  * app-authored status copy. `serverMessage` keeps the raw text for triage.
  */
-export function publicErrorCopy(status: number, detail: unknown): string {
+export function publicErrorCopy(status: number, detail: unknown, path?: string): string {
+  // A sign-in attempt has no session yet: its 401/403 is about the details the
+  // person typed (or the code, or the provider), never an expired session.
+  if ((status === 401 || status === 403) && path && isSignInPath(path)) return signInFailureCopy(path, detail);
   if (!ACTIONABLE_DETAIL_STATUSES.has(status)) return errorCopyFor(status);
   const candidate = detailCandidate(detail);
   if (!candidate) return errorCopyFor(status);
   return sanitizeDetailCopy(candidate) ?? errorCopyFor(status);
+}
+
+/**
+ * Requests made before a session exists: signing in (password, code, Google,
+ * GitHub, a team member's login and device confirmation), registering and
+ * resetting a password. A 401 there means the attempt failed, so it must never
+ * read "Your session has expired" — the person has no session yet.
+ */
+const SIGN_IN_PATHS = [
+  /^\/organizations\/login(\/|$)/,
+  /^\/organizations\/auth\//,
+  /^\/organizations\/register(\/|$)/,
+  /^\/organizations\/password-reset\//,
+  /^\/org-users\/auth\/(login|device-confirm|device-status)(\/|$)/,
+];
+
+export function isSignInPath(path: string): boolean {
+  const bare = path.split("?")[0];
+  return SIGN_IN_PATHS.some((re) => re.test(bare));
+}
+
+/** What a failed sign-in step says: the backend's reason when safe, else a sign-in specific fallback. */
+function signInFailureCopy(path: string, detail: unknown): string {
+  const candidate = detailCandidate(detail);
+  const fromServer = candidate ? sanitizeDetailCopy(candidate) : null;
+  if (fromServer && !/session (has )?expired/i.test(fromServer)) return fromServer;
+  const bare = path.split("?")[0];
+  if (/\/mfa(\/|$)/.test(bare) || /device-confirm/.test(bare)) return "That code is incorrect or has expired. Request a new one and try again.";
+  if (/\/auth\/(google|github)/.test(bare)) return "We couldn't verify that sign-in. Try again, or sign in with your email.";
+  if (/\/register/.test(bare)) return "We couldn't verify your sign-up. Start again from the sign-up page.";
+  if (/password-reset/.test(bare)) return "That reset link is invalid or has expired. Request a new one.";
+  return "Incorrect email or password.";
 }
 
 /** Normalize a raw backend detail for display (callers that bypass `ApiError`). */
@@ -303,7 +338,7 @@ export function errorCopyFor(status: number): string {
   if (status === 402) return "That needs an upgrade on your plan.";
   if (status === 403) return "You don't have permission to do that.";
   if (status === 404) return "That item no longer exists.";
-  if (status === 408) return "The request timed out. Try again.";
+  if (status === 408 || status === 504) return "The request timed out. Try again.";
   if (status === 409) return "That conflicts with the current state. Refresh and try again.";
   if (status === 429) return "Too many attempts. Wait a moment and try again.";
   if (status >= 500) return "The server couldn't complete that request. Try again shortly.";
@@ -335,11 +370,12 @@ export class ApiError extends Error {
   serverMessage: string;
   /** Server correlation id (X-Correlation-ID) for support/triage. */
   correlationId?: string;
-  constructor(status: number, detail: unknown, correlationId?: string) {
+  constructor(status: number, detail: unknown, correlationId?: string, path?: string) {
     const serverMessage = detailMessage(detail);
     // Normalized for display: the backend's own explanation when it is safe and
     // actionable, otherwise the status copy. Raw text stays on `serverMessage`.
-    super(publicErrorCopy(status, detail));
+    // `path` lets a failed sign-in say why instead of "session expired".
+    super(publicErrorCopy(status, detail, path));
     this.name = "ApiError";
     this.status = status;
     this.detail = detail;
@@ -505,7 +541,7 @@ async function requestOnce<T>(method: string, path: string, opts: RequestOpts = 
           detail: { seconds: sec ? Math.max(1, parseInt(sec[1], 10)) : null },
         }));
       }
-      throw new ApiError(res.status, detail, correlationId);
+      throw new ApiError(res.status, detail, correlationId, path);
     }
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
@@ -576,7 +612,7 @@ async function requestMultipart<T>(
           detail: { seconds: sec ? Math.max(1, parseInt(sec[1], 10)) : null },
         }));
       }
-      throw new ApiError(res.status, detail, correlationId);
+      throw new ApiError(res.status, detail, correlationId, path);
     }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
