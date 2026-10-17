@@ -11,6 +11,7 @@ import DeviceConfirm from "@/pages/DeviceConfirm";
 import Register from "@/pages/auth/Register";
 import Waitlist from "@/pages/auth/Waitlist";
 import GithubAuthCallback from "@/pages/auth/GithubAuthCallback";
+import GoogleSignupComplete from "@/pages/auth/GoogleSignupComplete";
 import StepUpPrompt from "@/components/StepUpPrompt";
 import AlertNotifications, { ConnectionWatch, NotificationProvider } from "@/components/Notifications";
 import Privacy from "@/pages/auth/Privacy";
@@ -138,6 +139,7 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/waitlist" element={<Waitlist />} />
             <Route path="/auth/github/callback" element={<GithubAuthCallback />} />
+            <Route path="/auth/google/complete" element={<GoogleSignupComplete />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/aup" element={<AUP />} />

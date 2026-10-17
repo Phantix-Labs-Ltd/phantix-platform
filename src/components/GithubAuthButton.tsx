@@ -4,7 +4,8 @@ import { useStore } from "@/lib/store";
 import { DEMO_MODE } from "@/lib/api";
 
 /** "Continue with GitHub" — sign-in only reads the profile and verified email;
- *  repository access stays with the GitHub App install. */
+ *  repository access stays with the GitHub App install. Logo-only: it shares a
+ *  row with the Google button (see SocialAuthButtons). */
 export default function GithubAuthButton({ intent, onError }: { intent: "login" | "signup"; onError: (msg: string) => void }) {
   const { githubAuthStart } = useStore();
   const [busy, setBusy] = useState(false);
@@ -21,14 +22,15 @@ export default function GithubAuthButton({ intent, onError }: { intent: "login" 
 
   if (DEMO_MODE) return null;
   return (
-    <>
-      <button type="button" onClick={start} disabled={busy} className="btn-secondary w-full !py-3">
-        {busy ? <Loader2 size={15} className="animate-spin" /> : <Github size={15} />}
-        Continue with GitHub
-      </button>
-      <div className="flex items-center gap-3 text-[12px] uppercase tracking-wider text-slate-600">
-        <span className="h-px flex-1 bg-phantix-700/50" /> or with email <span className="h-px flex-1 bg-phantix-700/50" />
-      </div>
-    </>
+    <button
+      type="button"
+      onClick={start}
+      disabled={busy}
+      aria-label="Continue with GitHub"
+      title="Continue with GitHub"
+      className="btn-secondary flex-1 justify-center !py-3"
+    >
+      {busy ? <Loader2 size={18} className="animate-spin" /> : <Github size={18} />}
+    </button>
   );
 }

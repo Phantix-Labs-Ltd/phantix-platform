@@ -5,7 +5,7 @@ import { ArrowRight, ShieldCheck, Database, EyeOff } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { PasswordInput } from "@/components/ui";
 import { BrandWordmark } from "@/components/BrandLogo";
-import GithubAuthButton from "@/components/GithubAuthButton";
+import SocialAuthButtons from "@/components/SocialAuthButtons";
 import SubstackSubscribe from "@/components/SubstackSubscribe";
 import { BetaBanner, BetaOptIn } from "@/components/BetaSignup";
 import { errorCode } from "@/lib/api";
@@ -100,7 +100,7 @@ export default function Register() {
             <p className="mt-1 text-sm text-slate-400 [@media(max-height:700px)]:hidden">Free plan · no card · we email a 6-digit code to confirm.</p>
 
             <motion.form onSubmit={submit} {...slide} className="mt-4 space-y-3.5 [@media(max-height:760px)]:mt-3 [@media(max-height:760px)]:space-y-2.5">
-              <GithubAuthButton intent="signup" onError={setError} />
+              <SocialAuthButtons intent="signup" onError={setError} />
               <div className="grid gap-3.5 sm:grid-cols-2 sm:gap-3">
                 <div>
                   <label className="label" htmlFor="reg-company">Company name</label>
