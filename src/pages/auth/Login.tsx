@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import AuthShowcase from "@/components/AuthShowcase";
 import SubstackSubscribe from "@/components/SubstackSubscribe";
 import { PasswordInput } from "@/components/ui";
-import GithubAuthButton from "@/components/GithubAuthButton";
+import SocialAuthButtons from "@/components/SocialAuthButtons";
 
 function NewsletterField() {
   // The sign-in list is Substack's; the reader confirms there. Keeping this a
@@ -146,7 +146,7 @@ export default function Login() {
               <AnimatePresence mode="wait">
                 {stage === "password" ? (
                   <motion.form key="pw" initial={{ opacity: 0, x: -14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -14 }} onSubmit={submit} className="space-y-3.5 [@media(max-height:820px)]:space-y-3">
-                    <GithubAuthButton intent="login" onError={setError} />
+                    <SocialAuthButtons intent="login" onError={setError} />
                     <div>
                       <label className="label">Primary (company) email</label>
                       <div className="relative">

@@ -170,6 +170,8 @@ export type RegisterResult = { signedIn: boolean; next: OnboardingNext; emailVer
 export type GithubAuthResult =
   | { kind: "signed_in"; next: OnboardingNext }
   | { kind: "signup"; signupToken: string; email: string; name: string; suggestedCompany: string };
+/** Google answers the same way: a session for a known org, else a signup token. */
+export type SocialAuthResult = GithubAuthResult;
 
 type SessionTokenResponse = {
   access_token: string;
@@ -535,6 +537,9 @@ type Store = {
    *  sign-up details for a new one. */
   githubAuthCallback: (code: string, state: string) => Promise<GithubAuthResult>;
   registerWithGithub: (signupToken: string, companyName: string, joinBeta?: boolean) => Promise<RegisterResult>;
+  /** Exchange a Firebase (Google) ID token: signs in a known org, else returns a signup token. */
+  googleAuth: (idToken: string) => Promise<SocialAuthResult>;
+  registerWithGoogle: (signupToken: string, companyName: string, joinBeta?: boolean) => Promise<RegisterResult>;
   login: (email: string, password: string) => Promise<{ mfaRequired: boolean; destinationMasked?: string; mustChangePassword?: boolean; platformAccess?: boolean; role?: string }>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   verifyMfa: (code: string) => Promise<void>;
@@ -1112,6 +1117,35 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const registerWithGithub = useCallback(async (signupToken: string, companyName: string, joinBeta = false): Promise<RegisterResult> => {
     const res = await api.post<SessionTokenResponse & { organization?: { email?: string } }>(
       "/organizations/register/github",
+      { signup_token: signupToken, company_name: companyName, accept_terms: true, join_beta: joinBeta },
+    );
+    const email = res.organization?.email || emailFromToken(res.access_token) || "";
+    await startSession(res, email);
+    return { signedIn: true, next: asNext(res.next, true), emailVerified: true };
+  }, [startSession]);
+
+  const googleAuth = useCallback(async (idToken: string): Promise<SocialAuthResult> => {
+    const res = await api.post<Partial<SessionTokenResponse> & {
+      signup_token?: string; email?: string; name?: string; suggested_company?: string;
+    }>("/organizations/auth/google", { id_token: idToken });
+    if (res.access_token) {
+      const email = res.email || emailFromToken(res.access_token) || "";
+      await startSession(res as SessionTokenResponse, email);
+      return { kind: "signed_in", next: asNext(res.next, true) };
+    }
+    if (!res.signup_token) throw new Error("Google sign-in did not return a session. Try again.");
+    return {
+      kind: "signup",
+      signupToken: res.signup_token,
+      email: res.email || "",
+      name: res.name || "",
+      suggestedCompany: res.suggested_company || "",
+    };
+  }, [startSession]);
+
+  const registerWithGoogle = useCallback(async (signupToken: string, companyName: string, joinBeta = false): Promise<RegisterResult> => {
+    const res = await api.post<SessionTokenResponse & { organization?: { email?: string } }>(
+      "/organizations/register/google",
       { signup_token: signupToken, company_name: companyName, accept_terms: true, join_beta: joinBeta },
     );
     const email = res.organization?.email || emailFromToken(res.access_token) || "";
@@ -2710,7 +2744,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     () => ({
       session, state, operate, securityDbReady, sessionLoading, sessionHydrated, sessionExpired, clearSessionExpired, expireSession, billingEntitlements,
       onboarding, refreshOnboarding, markMilestone, dismissOnboarding, stepUpPrompt, closeStepUpPrompt,
-      register, githubAuthStart, githubAuthCallback, registerWithGithub, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession,
+      register, githubAuthStart, githubAuthCallback, registerWithGithub, googleAuth, registerWithGoogle, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession,
       acceptPrivacy, saveIdentity, updateOrgProfile, sendOtp, verifyOtp, startDomainVerification, checkDomain, submitCac, skipCac, requestManualReview, completeSetup, refreshSetup,
       createUser, assignDualControl, unlockOperate, lockOperate,
       requireDualControl, dualControlPrompt, closeDualControlPrompt,
@@ -2723,7 +2757,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }),
     [session, state, operate, securityDbReady, sessionLoading, sessionHydrated, sessionExpired, clearSessionExpired, expireSession, toasts, dualControlPrompt,
       onboarding, refreshOnboarding, markMilestone, dismissOnboarding, stepUpPrompt, closeStepUpPrompt,
-      register, githubAuthStart, githubAuthCallback, registerWithGithub, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession, acceptPrivacy, saveIdentity, updateOrgProfile, sendOtp, verifyOtp,
+      register, githubAuthStart, githubAuthCallback, registerWithGithub, googleAuth, registerWithGoogle, login, changePassword, verifyMfa, resendLoginOtp, resendRegisterOtp, logout, hydrateSession, refreshSession, acceptPrivacy, saveIdentity, updateOrgProfile, sendOtp, verifyOtp,
       startDomainVerification, checkDomain, submitCac, skipCac, requestManualReview, completeSetup, refreshSetup,
       createUser, assignDualControl, unlockOperate, lockOperate,
       requireDualControl, closeDualControlPrompt, requestDualControlOtp, verifyDualControlOtp, confirmDualControlDevice,
