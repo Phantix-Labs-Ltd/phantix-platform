@@ -50,6 +50,17 @@ const moreGovernanceSubItems: NavLeafItem[] = [
   { to: "/agent-activity", label: "Activity", icon: <Activity size={17} /> },
 ];
 
+/** MSSP-only surfaces. Hidden entirely for a standard organization. */
+const msspNavSection = {
+  label: "MSSP",
+  items: [
+    { to: "/mssp/clients", label: "Clients", icon: <Building2 size={17} /> },
+    { to: "/mssp/authorization", label: "Authorization", icon: <KeyRound size={17} /> },
+    { to: "/mssp/compliance", label: "NDPA pack", icon: <ScrollText size={17} /> },
+    { to: "/mssp/delivery", label: "Delivery", icon: <BellRing size={17} /> },
+  ] as NavLeafItem[],
+};
+
 const baseNavSections: { label: string; items: (NavLeafItem | NavDropdownItem)[] }[] = [
   {
     label: "Overview",
@@ -229,7 +240,12 @@ export default function Layout() {
 
   // BETA sandbox lives in the topbar now (icon beside the theme toggle), so
   // the sidebar itself no longer needs a sandbox-enrolled variant.
-  const navSections = baseNavSections;
+  // The MSSP section exists only for organizations registered as an MSSP; the
+  // backend enforces the same rule, so hiding it is a courtesy, not the gate.
+  const navSections =
+    state.org?.organization_type === "mssp"
+      ? [baseNavSections[0], msspNavSection, ...baseNavSections.slice(1)]
+      : baseNavSections;
 
   // Auto-logout after inactivity --- uses backend's inactivity_expires_at if set, else 20 min
   useEffect(() => {

@@ -19,6 +19,10 @@ export interface Organization {
   registration_number: string | null;
   tax_id: string | null;
   company_type: string | null;
+  /** standard = own estate; mssp = services for multiple client organizations. */
+  organization_type?: "standard" | "mssp";
+  max_clients?: number | null;
+  mssp_plan?: string | null;
   year_founded: number | null;
   industry: string;
   sub_industry: string | null;
