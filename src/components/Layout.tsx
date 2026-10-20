@@ -56,6 +56,8 @@ const msspNavSection = {
   items: [
     { to: "/mssp/clients", label: "Clients", icon: <Building2 size={17} /> },
     { to: "/mssp/authorization", label: "Authorization", icon: <KeyRound size={17} /> },
+    { to: "/mssp/compliance", label: "NDPA pack", icon: <ScrollText size={17} /> },
+    { to: "/mssp/delivery", label: "Delivery", icon: <BellRing size={17} /> },
   ] as NavLeafItem[],
 };
 

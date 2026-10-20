@@ -29,6 +29,8 @@ const Identity = React.lazy(() => import("@/pages/Identity"));
 const Companies = React.lazy(() => import("@/pages/Companies"));
 const MsspClients = React.lazy(() => import("@/pages/MsspClients"));
 const MsspAuthorization = React.lazy(() => import("@/pages/MsspAuthorization"));
+const MsspCompliance = React.lazy(() => import("@/pages/MsspCompliance"));
+const MsspDelivery = React.lazy(() => import("@/pages/MsspDelivery"));
 const Users = React.lazy(() => import("@/pages/Users"));
 const Connections = React.lazy(() => import("@/pages/Connections"));
 const SecurityDbJourney = React.lazy(() => import("@/pages/SecurityDbJourney"));
@@ -163,6 +165,8 @@ export default function App() {
               <Route path="/companies" element={<RequireManagement><Companies /></RequireManagement>} />
             <Route path="/mssp/clients" element={<RequireManagement><MsspClients /></RequireManagement>} />
             <Route path="/mssp/authorization" element={<RequireManagement><MsspAuthorization /></RequireManagement>} />
+            <Route path="/mssp/compliance" element={<RequireManagement><MsspCompliance /></RequireManagement>} />
+            <Route path="/mssp/delivery" element={<RequireManagement><MsspDelivery /></RequireManagement>} />
               <Route path="/users" element={<RequireManagement><Users /></RequireManagement>} />
               <Route path="/connections" element={<RequireManagement><Connections /></RequireManagement>} />
               <Route path="/connections/new/*" element={<RequireManagement><SecurityDbJourney /></RequireManagement>} />
