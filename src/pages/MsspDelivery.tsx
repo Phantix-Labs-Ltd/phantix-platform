@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Clock, Mail, Users } from "lucide-react";
-import { PageHeader, Card, StatusBadge, SkeletonCard } from "@/components/ui";
+import { PageHeader, Card, StatusBadge, SkeletonCard, Modal } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { timeAgo } from "@/lib/utils";
 import {
@@ -38,6 +38,8 @@ export default function MsspDelivery() {
   const [loading, setLoading] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
   const [sending, setSending] = useState(false);
+  const [editingRecipients, setEditingRecipients] = useState(false);
+  const [recipientsDraft, setRecipientsDraft] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -181,19 +183,55 @@ export default function MsspDelivery() {
             {sending ? "Sending…" : "Send now"}
           </button>
         </div>
-        <label className="mt-3 block text-[12px] text-slate-500">
-          Recipients (comma separated)
-          <input
-            className="input mt-1 !py-1.5 text-sm"
-            defaultValue={sched.recipients.join(", ")}
-            onBlur={(e) =>
-              void saveSched({
-                recipients: e.target.value.split(",").map((v) => v.trim()).filter(Boolean),
-              })
-            }
-          />
-        </label>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-[12px] text-slate-500">
+            {sched.recipients.length
+              ? `Recipients: ${sched.recipients.join(", ")}`
+              : "No recipients yet — the pack cannot send."}
+          </span>
+          <button
+            className="btn-secondary !py-1 !text-xs"
+            onClick={() => {
+              setRecipientsDraft(sched.recipients.join(", "));
+              setEditingRecipients(true);
+            }}
+          >
+            Edit recipients
+          </button>
+        </div>
       </Card>
+
+      <Modal open={editingRecipients} onClose={() => setEditingRecipients(false)} title="Pack recipients">
+        <div className="space-y-3">
+          <label className="block text-[12px] uppercase tracking-wide text-slate-500">
+            Email addresses
+            <textarea
+              className="input mt-1 w-full py-2 text-sm"
+              rows={3}
+              value={recipientsDraft}
+              onChange={(e) => setRecipientsDraft(e.target.value)}
+              placeholder="ciso@client.test, security@client.test"
+            />
+            <span className="mt-1 block text-[11px] normal-case tracking-normal text-slate-600">
+              Up to 25. The pack is sent from the client's brand, not SecureGraph's.
+            </span>
+          </label>
+          <div className="flex justify-end gap-2">
+            <button className="btn-secondary" onClick={() => setEditingRecipients(false)}>Cancel</button>
+            <button
+              className="btn-primary"
+              onClick={() => {
+                void saveSched({
+                  recipients: recipientsDraft.split(",").map((v) => v.trim()).filter(Boolean),
+                });
+                setEditingRecipients(false);
+              }}
+            >
+              Save recipients
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {assignments.length > 0 && (
         <Card className="mt-4 !p-4">

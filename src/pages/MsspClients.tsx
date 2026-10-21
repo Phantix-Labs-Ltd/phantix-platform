@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { AlertTriangle, Building2, Clock, RefreshCw, ShieldCheck, Users } from "lucide-react";
-import { PageHeader, Card, StatusBadge, EmptyState, Spinner, SkeletonCard } from "@/components/ui";
+import { PageHeader, Card, StatusBadge, EmptyState, SkeletonCard } from "@/components/ui";
+import { Pagination, usePaged } from "@/components/Pagination";
 import { useStore } from "@/lib/store";
 import { timeAgo, cx } from "@/lib/utils";
+import { useResource } from "@/lib/useResource";
 import {
   isFeatureError,
   loadMsspPortfolio,
@@ -23,38 +25,32 @@ import {
  */
 export default function MsspClients() {
   const { toast } = useStore();
-  const [data, setData] = useState<MsspPortfolio | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const EMPTY: MsspPortfolio = {
+    clients: [],
+    counts: { total: 0, reporting: 0, stale: 0, failing: 0 },
+    cap: { max_clients: null, clients_used: 0 },
+    read_model: "",
+  };
   const [notMssp, setNotMssp] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const { data, loading, error, refresh: reload } = useResource<MsspPortfolio>(async () => {
     try {
-      setData(await loadMsspPortfolio());
-      setNotMssp(false);
+      return await loadMsspPortfolio();
     } catch (e) {
+      // A standard organization gets 403 organization_feature_required: explain it.
       if (isFeatureError(e)) {
         setNotMssp(true);
-      } else {
-        setError(e instanceof Error ? e.message : "Could not load the portfolio.");
+        return EMPTY;
       }
-    } finally {
-      setLoading(false);
+      throw e;
     }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  }, EMPTY);
 
   const refresh = async () => {
     setRefreshing(true);
     try {
       const out = await refreshMsspPortfolio();
-      await load();
+      reload();
       toast(
         "success",
         "Snapshots refreshed",
@@ -90,21 +86,22 @@ export default function MsspClients() {
       </div>
     );
   }
-  if (error) {
+  if (error && !notMssp) {
     return (
       <div>
         <PageHeader title="Clients" description="Managed client organizations." />
         <Card className="flex flex-wrap items-center gap-3">
           <AlertTriangle size={16} className="text-red-300" />
           <p className="flex-1 text-sm text-slate-300">{error}</p>
-          <button className="btn-secondary" onClick={() => void load()}>Try again</button>
+          <button className="btn-secondary" onClick={reload}>Try again</button>
         </Card>
       </div>
     );
   }
   if (!data) return null;
 
-  const { counts, cap, clients } = data;
+  const { counts, cap } = data;
+  const { pageItems, pagination } = usePaged(data.clients, "mssp-clients", counts.total);
   const capLabel =
     cap.max_clients === null
       ? "No client cap set"
@@ -142,7 +139,7 @@ export default function MsspClients() {
         ))}
       </div>
 
-      {clients.length === 0 ? (
+      {data.clients.length === 0 ? (
         <EmptyState
           icon={<Building2 size={22} />}
           title="No client organizations yet"
@@ -162,11 +159,14 @@ export default function MsspClients() {
               </tr>
             </thead>
             <tbody>
-              {clients.map((row) => (
+              {pageItems.map((row) => (
                 <ClientRow key={row.organization_id} row={row} />
               ))}
             </tbody>
           </table>
+          <div className="border-t border-phantix-700/40 px-3 py-2">
+            <Pagination {...pagination} itemLabel="clients" />
+          </div>
         </Card>
       )}
 

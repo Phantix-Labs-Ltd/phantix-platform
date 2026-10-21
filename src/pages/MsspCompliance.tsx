@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { FileSignature, ShieldCheck } from "lucide-react";
-import { PageHeader, Card, StatusBadge, SkeletonCard } from "@/components/ui";
+import { PageHeader, Card, StatusBadge, SkeletonCard, Modal } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { timeAgo } from "@/lib/utils";
 import {
@@ -24,6 +24,8 @@ export default function MsspCompliance() {
   const [notAvailable, setNotAvailable] = useState(false);
   const [saving, setSaving] = useState(false);
   const [signer, setSigner] = useState("");
+  const [signing, setSigning] = useState(false);
+  const [signOpen, setSignOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,10 +94,9 @@ export default function MsspCompliance() {
               : "Not signed yet. The client signs; the provider can only prepare it."}
           </p>
           {!pack.dpa_signed_by && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              <input className="input !py-1.5 text-sm" value={signer} onChange={(e) => setSigner(e.target.value)} placeholder="Full name of signer" />
-              <button className="btn-primary" onClick={() => void sign()}>Record signature</button>
-            </div>
+            <button className="btn-primary mt-2 !py-1.5 !text-xs" onClick={() => setSignOpen(true)}>
+              Record signature
+            </button>
           )}
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <label className="text-[12px] text-slate-500">
@@ -135,6 +136,38 @@ export default function MsspCompliance() {
           {saving && <p className="mt-2 text-[12px] text-slate-500">Saving…</p>}
         </Card>
       </div>
+
+      <Modal open={signOpen} onClose={() => setSignOpen(false)} title="Sign the data processing agreement">
+        <div className="space-y-3">
+          <label className="block text-[12px] uppercase tracking-wide text-slate-500">
+            Full name of the signer
+            <input
+              className="input mt-1 w-full py-2 text-sm"
+              value={signer}
+              onChange={(e) => setSigner(e.target.value)}
+              placeholder="Jane Okafor, CISO"
+            />
+            <span className="mt-1 block text-[11px] normal-case tracking-normal text-slate-600">
+              The signature is yours: your provider can prepare the pack, never sign it.
+            </span>
+          </label>
+          <div className="flex justify-end gap-2">
+            <button className="btn-secondary" onClick={() => setSignOpen(false)}>Cancel</button>
+            <button
+              className="btn-primary"
+              disabled={signing}
+              onClick={async () => {
+                setSigning(true);
+                await sign();
+                setSigning(false);
+                setSignOpen(false);
+              }}
+            >
+              {signing ? "Recording…" : "Sign"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
