@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertOctagon, CalendarClock, FileSignature, ShieldCheck } from "lucide-react";
 import { PageHeader, Card, StatusBadge, EmptyState, SkeletonCard } from "@/components/ui";
+import { Pagination, usePaged } from "@/components/Pagination";
 import { useStore } from "@/lib/store";
 import { timeAgo } from "@/lib/utils";
 import {
@@ -105,6 +106,7 @@ export default function MsspAuthorization() {
   }
 
   const active = status?.authorization ?? null;
+  const { pageItems: authPage, pagination } = usePaged(auths, "mssp-authorizations", auths.length);
 
   return (
     <div>
@@ -236,7 +238,7 @@ export default function MsspAuthorization() {
               </tr>
             </thead>
             <tbody>
-              {auths.map((a) => (
+              {authPage.map((a) => (
                 <tr key={a.id} className="border-b border-phantix-800/40 last:border-0">
                   <td className="px-3 py-2.5 text-slate-200">
                     {a.reference} <span className="text-[12px] text-slate-500">v{a.version}</span>
@@ -255,6 +257,9 @@ export default function MsspAuthorization() {
               ))}
             </tbody>
           </table>
+          <div className="border-t border-phantix-700/40 px-3 py-2">
+            <Pagination {...pagination} itemLabel="authorizations" />
+          </div>
         </Card>
       )}
     </div>
