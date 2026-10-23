@@ -792,7 +792,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         api.get<unknown>("/organizations/me/service-key").catch(() =>
           api.get<unknown>("/organizations/me/service-keys").catch(() => null),
         ),
-        api.get<unknown>("/org-users").catch(() => null),
+        // Current users only: a removed user is kept (deactivated) for the audit
+        // trail, but must not come back on the Access list after a refresh.
+        api.get<unknown>("/org-users?active_only=true").catch(() => null),
         api.get<unknown>("/org-users/dual-control").catch(() => null),
         api.get<unknown>("/alerts/events").catch(() => null),
         api.get<unknown>("/alerts/settings").catch(() => null),
@@ -1758,7 +1760,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // If ID not found in POST response, fetch from GET to get the real server ID
       if (!id) {
         try {
-          const usersRes = await api.get<unknown>("/org-users");
+          const usersRes = await api.get<unknown>("/org-users?active_only=true");
           const raw = Array.isArray(usersRes) ? usersRes : ((usersRes as { items?: unknown[] })?.items ?? []);
           const match = (raw as Record<string, unknown>[]).find(
             (x) => String(x.email ?? "").toLowerCase() === u.email.toLowerCase(),
