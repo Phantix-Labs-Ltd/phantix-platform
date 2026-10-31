@@ -1,12 +1,23 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Download, ArrowRight, Loader2, RefreshCw, ChevronLeft, ChevronRight, Search, ShieldAlert } from "lucide-react";
+import { Download, Loader2, RefreshCw, ChevronLeft, ChevronRight, Search, ShieldAlert } from "lucide-react";
 import DocLink from "@/components/DocLink";
 import { PageHeader, Card, TableCardSkeleton } from "@/components/ui";
 import { useStore } from "@/lib/store";
 import { api } from "@/lib/api";
 import { describeEndpoint } from "@/lib/auditExplain";
-import { cx, timeAgo, formatDateTime } from "@/lib/utils";
+import { cx, parseTimestamp, timeAgo, titleCase } from "@/lib/utils";
+
+// Each row reads like a sentence: a category, what happened to which record
+// (the names in bold), who did it, when, and from where. The API words the
+// sentence; older backends without it fall back to the route's description.
+
+type Change = "added" | "changed" | "removed" | "viewed" | "access" | "refused";
+
+interface DescriptionPart {
+  text: string;
+  bold?: boolean;
+}
 
 interface AuditRow {
   id: number;
@@ -15,6 +26,17 @@ interface AuditRow {
   action_key: string;
   action_label: string;
   category: string;
+  event_category?: string | null;
+  description?: DescriptionPart[];
+  description_text?: string;
+  change?: Change | null;
+  performed_by?: string | null;
+  outcome?: string | null;
+  status_code?: number | null;
+  method?: string | null;
+  route?: string | null;
+  resource_type?: string | null;
+  resource_id?: string | null;
   status: string;
   initiator_name: string | null;
   initiator_title: string | null;
@@ -39,18 +61,70 @@ interface AuditRow {
 
 const PAGE_SIZE = 200;
 
-const CATEGORY_COLORS: Record<string, string> = {
-  auth: "border-blue-400/40 bg-blue-400/10 text-blue-300",
-  data_access: "border-cyan-400/40 bg-cyan-400/10 text-cyan-300",
-  mutation: "border-amber-400/40 bg-amber-400/10 text-amber-300",
-  people: "border-indigo-400/40 bg-indigo-400/10 text-indigo-300",
-  billing: "border-emerald-400/40 bg-emerald-400/10 text-emerald-300",
-  security: "border-red-400/40 bg-red-400/10 text-red-300",
-  agi: "border-fuchsia-400/40 bg-fuchsia-400/10 text-fuchsia-300",
+/** Categories the API files events under; the response sends the live list. */
+const DEFAULT_CATEGORIES = [
+  "Sign-in", "Users", "Roles", "Organization", "Domains", "Approvals", "Audit trail", "Assets",
+  "Testing", "Mobile", "API endpoints", "Findings", "Risks", "Reports", "Compliance", "Detection",
+  "Code", "Context", "Integrations", "Database", "Agent", "Notifications", "Billing", "Support", "Platform",
+];
+
+/** The bar at the start of each row: what kind of change it was. */
+const CHANGE_META: Record<Change, { label: string; bar: string }> = {
+  added: { label: "Added", bar: "bg-emerald-500" },
+  changed: { label: "Changed", bar: "bg-amber-400" },
+  removed: { label: "Removed", bar: "bg-rose-500" },
+  access: { label: "Sign-in", bar: "bg-sky-500" },
+  viewed: { label: "Viewed", bar: "bg-slate-500" },
+  refused: { label: "Denied or failed", bar: "bg-red-600" },
 };
 
-function categoryLabel(cat: string): string {
-  return (cat || "other").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+function changeOf(e: AuditRow): Change {
+  if (e.change) return e.change;
+  if (e.outcome === "denied" || e.outcome === "failed" || e.status === "rejected") return "refused";
+  if (e.details?.passive) return "viewed";
+  const method = (e.method ?? e.details?.method ?? "").toUpperCase();
+  if (method === "POST") return "added";
+  if (method === "DELETE") return "removed";
+  return "changed";
+}
+
+function categoryOf(e: AuditRow): string {
+  return e.event_category || titleCase((e.category || "platform").replace(/-/g, " "));
+}
+
+/** The sentence the API wrote, or one built from the route for older backends. */
+function descriptionOf(e: AuditRow): DescriptionPart[] {
+  if (e.description && e.description.length > 0) return e.description;
+  const desc = e.details?.path ? describeEndpoint(e.details.method ?? "GET", e.details.path) : null;
+  const label = ((desc?.label ?? e.action_label) || e.action_key || "Activity").replace(/\.$/, "");
+  return [{ text: `${label}.` }];
+}
+
+function performedBy(e: AuditRow): string {
+  return e.performed_by ?? e.details?.actor_email ?? e.initiator_name ?? "System";
+}
+
+/** "12/10/2026 23:10" in the reader's locale. */
+function eventTime(iso: string): string {
+  const d = parseTimestamp(iso);
+  if (Number.isNaN(d.getTime())) return "Not set";
+  const date = d.toLocaleDateString(undefined, { day: "2-digit", month: "2-digit", year: "numeric" });
+  const time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  return `${date} ${time}`;
+}
+
+function fullTime(iso: string | null): string {
+  if (!iso) return "Not set";
+  const d = parseTimestamp(iso);
+  if (Number.isNaN(d.getTime())) return "Not set";
+  return d.toLocaleString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function statusColor(status: string): string {
@@ -77,9 +151,27 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
-/** Normalize an audit row into a short, stable display id. */
-function shortUid(uid: string): string {
-  return (uid || "").replace(/-/g, "").slice(0, 8).toUpperCase() || "Not set";
+function Sentence({ parts }: { parts: DescriptionPart[] }) {
+  return (
+    <>
+      {parts.map((p, i) =>
+        p.bold ? (
+          <strong key={i} className="font-semibold text-slate-50">{p.text}</strong>
+        ) : (
+          <React.Fragment key={i}>{p.text}</React.Fragment>
+        ),
+      )}
+    </>
+  );
+}
+
+function Fact({ label, children, mono }: { label: string; children: React.ReactNode; mono?: boolean }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</dt>
+      <dd className={cx("mt-0.5 break-words text-[13px] text-slate-200", mono && "font-mono text-[12px]")}>{children}</dd>
+    </div>
+  );
 }
 
 export default function Audit() {
@@ -88,6 +180,7 @@ export default function Audit() {
 
   const [items, setItems] = useState<AuditRow[]>([]);
   const [total, setTotal] = useState(0);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -95,6 +188,7 @@ export default function Audit() {
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
   const [sortByClass, setSortByClass] = useState(false);
+  const [open, setOpen] = useState<number | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -105,13 +199,16 @@ export default function Audit() {
     params.set("limit", String(PAGE_SIZE));
     params.set("offset", String(page * PAGE_SIZE));
     if (search.trim()) params.set("q", search.trim());
-    if (category !== "all") params.set("category", category);
+    if (category !== "all") params.set("event_category", category);
     if (status !== "all") params.set("status", status);
     try {
-      const res = await api.get<{ items?: AuditRow[]; total?: number }>(`/audit/events?${params.toString()}`);
+      const res = await api.get<{ items?: AuditRow[]; total?: number; event_categories?: string[] }>(
+        `/audit/events?${params.toString()}`,
+      );
       const rows = (res?.items ?? []) as AuditRow[];
       setItems(rows);
       setTotal(Number(res?.total ?? rows.length));
+      if (res?.event_categories?.length) setCategories(res.event_categories);
     } catch (e) {
       setItems([]);
       setTotal(0);
@@ -141,7 +238,7 @@ export default function Audit() {
     setExporting(true);
     try {
       await exportAuditCsv();
-      toast("success", "Export ready", "Audit CSV downloaded. Every row carries an initiator and an authorizer name.");
+      toast("success", "Export ready", "Audit CSV downloaded. Every row carries its category, description and who performed it.");
     } catch (err) {
       toast("error", "Export failed", err instanceof Error ? err.message : "Could not download the audit trail");
     } finally {
@@ -152,14 +249,14 @@ export default function Audit() {
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   // Group/order by category (class) when toggled on.
   const visible = sortByClass
-    ? [...items].sort((a, b) => (a.category || "").localeCompare(b.category || ""))
+    ? [...items].sort((a, b) => categoryOf(a).localeCompare(categoryOf(b)))
     : items;
 
   return (
     <div>
       <PageHeader
         title="Audit trail"
-        description="Immutable audit trail of user activity. Every action has an initiator, an authorizer, a status and a timeline for compliance."
+        description="Immutable record of what was done, to which record, by whom, when, and from where."
         actions={
           <div className="flex items-center gap-2">
             <DocLink docId="howto-platform-index" label="Platform how-to index" />
@@ -172,23 +269,24 @@ export default function Audit() {
       />
 
       {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="relative">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search initiator, action, summary…"
+            placeholder="Search events, people, records, IPs"
+            aria-label="Search the audit trail"
             className="w-72 rounded-lg border border-phantix-700/50 bg-phantix-950/70 py-1.5 pl-8 pr-3 text-xs text-slate-200 outline-none placeholder:text-slate-500 focus:border-gold-400/50"
           />
         </div>
-        <select value={category} onChange={(e) => setCategory(e.target.value)} className="input !w-auto !py-1.5 !text-xs">
+        <select value={category} onChange={(e) => setCategory(e.target.value)} className="input !w-auto !py-1.5 !text-xs" aria-label="Event category">
           <option value="all">All categories</option>
-          {["auth", "data_access", "mutation", "people", "billing", "security", "agi"].map((c) => (
-            <option key={c} value={c}>{categoryLabel(c)}</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>{c}</option>
           ))}
         </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="input !w-auto !py-1.5 !text-xs">
+        <select value={status} onChange={(e) => setStatus(e.target.value)} className="input !w-auto !py-1.5 !text-xs" aria-label="Status">
           <option value="all">All statuses</option>
           <option value="completed">Completed</option>
           <option value="pending">Pending / initiated</option>
@@ -196,9 +294,18 @@ export default function Audit() {
         </select>
         <label className="flex cursor-pointer items-center gap-1.5 text-xs text-slate-400">
           <input type="checkbox" checked={sortByClass} onChange={(e) => setSortByClass(e.target.checked)} className="h-3 w-3 accent-gold-400" />
-          Group by category (class)
+          Group by category
         </label>
         <span className="ml-auto text-[13px] text-slate-500">{total.toLocaleString()} events · {PAGE_SIZE}/page</span>
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px] text-slate-500" aria-label="Bar colours">
+        {(Object.keys(CHANGE_META) as Change[]).map((k) => (
+          <span key={k} className="inline-flex items-center gap-1.5">
+            <span className={cx("h-3 w-[3px] rounded-full", CHANGE_META[k].bar)} aria-hidden />
+            {CHANGE_META[k].label}
+          </span>
+        ))}
       </div>
 
       {loadError && (
@@ -209,90 +316,90 @@ export default function Audit() {
       )}
 
       {loading ? (
-        <TableCardSkeleton rows={8} cols={8} title={false} />
+        <TableCardSkeleton rows={8} cols={5} title={false} />
       ) : (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
           <Card className="!p-0 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[56rem]">
                 <thead>
                   <tr className="border-b border-phantix-700/40">
-                    <th className="th">Alert ID</th>
-                    <th className="th">Category (class)</th>
-                    <th className="th">What was done</th>
-                    <th className="th">Initiator</th>
-                    <th className="th">Authorizer</th>
-                    <th className="th">Status</th>
-                    <th className="th">Timeline</th>
-                    <th className="th">IP</th>
+                    <th className="th w-44">Event category</th>
+                    <th className="th">Event description</th>
+                    <th className="th">Performed by</th>
+                    <th className="th">Event time</th>
+                    <th className="th">Client IP address</th>
+                    <th className="th w-8"><span className="sr-only">Details</span></th>
                   </tr>
                 </thead>
                 <tbody>
                   {visible.map((e, i) => {
-                    const cat = e.category || "other";
-                    const catColor = CATEGORY_COLORS[cat] ?? "border-slate-500/40 bg-slate-500/10 text-slate-400";
-                    const desc = describeEndpoint(e.details?.method ?? "GET", e.details?.path ?? "");
+                    const change = CHANGE_META[changeOf(e)];
+                    const expanded = open === e.id;
+                    const desc = e.details?.path ? describeEndpoint(e.details.method ?? "GET", e.details.path) : null;
+                    const refused = e.outcome === "denied" || e.outcome === "failed";
+                    const method = e.method ?? e.details?.method;
+                    const request = e.route ?? e.details?.path;
                     return (
-                      <motion.tr
-                        key={`${e.id}-${i}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: Math.min(i * 0.015, 0.4) }}
-                        className="border-b border-phantix-800/40 hover:bg-phantix-800/35"
-                      >
-                        <td className="td whitespace-nowrap" title={e.event_uid ? `Event ${e.event_uid}` : undefined}>
-                          <span className="font-mono text-[13px] text-gold-300">#{e.id}</span>
-                          <span className="ml-1.5 font-mono text-[11px] text-slate-600">{shortUid(e.event_uid)}</span>
-                        </td>
-                        <td className="td">
-                          <span className={cx("rounded-md border px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wider", catColor)}>
-                            {categoryLabel(cat)}
-                          </span>
-                          {e.details?.passive !== undefined && (
-                            <span className="ml-1.5 text-[11px] text-slate-500">{e.details.passive ? "read" : "write"}</span>
-                          )}
-                        </td>
-                        <td className="td max-w-[30rem]">
-                          <span className="block truncate" title={(desc?.detail ?? e.summary) || undefined}>
-                            <span className="font-medium text-slate-100">{(desc?.label ?? e.action_label) || e.action_key || "Activity"}</span>
-                            <span className="ml-2 text-[13px] text-slate-500">{(desc?.detail ?? e.summary) || "An action was performed on the platform."}</span>
-                          </span>
-                        </td>
-                        <td className="td">
-                          <div className="flex items-center gap-1.5">
-                            <span className="flex h-5 w-5 items-center justify-center rounded-md bg-phantix-700/60 text-[11px] font-bold text-phantix-200">
-                              {(e.initiator_name ?? "?").slice(0, 1)}
-                            </span>
-                            <span className="whitespace-nowrap text-[13px] text-slate-300">
-                              {e.initiator_name ?? "Not set"}
-                              {e.initiator_title && <span className="ml-1.5 text-slate-500">{e.initiator_title}</span>}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="td">
-                          {e.authorizer_name ? (
-                            <div className="flex items-center gap-1.5">
-                              <span className="flex h-5 w-5 items-center justify-center rounded-md bg-gold-400/20 text-[11px] font-bold text-gold-300">
-                                {e.authorizer_name.slice(0, 1)}
-                              </span>
-                              <span className="whitespace-nowrap text-[13px] text-slate-300">
-                                {e.authorizer_name}
-                                {e.authorizer_title && <span className="ml-1.5 text-slate-500">{e.authorizer_title}</span>}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-[13px] text-slate-600">Not set</span>
-                          )}
-                        </td>
-                        <td className="td"><StatusPill status={e.status || "Not set"} /></td>
-                        <td
-                          className="td whitespace-nowrap text-[13px] text-slate-400"
-                          title={[e.created_at ? formatDateTime(e.created_at) : "", e.initiated_at && e.completed_at && e.initiated_at !== e.completed_at ? `started ${timeAgo(e.initiated_at)}` : ""].filter(Boolean).join(" · ")}
+                      <React.Fragment key={`${e.id}-${i}`}>
+                        <motion.tr
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: Math.min(i * 0.015, 0.4) }}
+                          onClick={() => setOpen(expanded ? null : e.id)}
+                          onKeyDown={(ev) => {
+                            if (ev.key === "Enter" || ev.key === " ") {
+                              ev.preventDefault();
+                              setOpen(expanded ? null : e.id);
+                            }
+                          }}
+                          tabIndex={0}
+                          aria-expanded={expanded}
+                          className="cursor-pointer border-b border-phantix-800/40 align-top hover:bg-phantix-800/35"
                         >
-                          {timeAgo(e.created_at)}
-                        </td>
-                        <td className="td font-mono text-[12px] text-slate-500">{e.ip_address ?? "Not set"}</td>
-                      </motion.tr>
+                          <td className="td whitespace-nowrap text-[13px] text-slate-200">
+                            <span className={cx("mr-2.5 inline-block h-5 w-[3px] rounded-full align-middle", change.bar)} title={change.label} aria-hidden />
+                            <span className="sr-only">{change.label}: </span>
+                            <span className="align-middle">{categoryOf(e)}</span>
+                          </td>
+                          <td className="td max-w-[34rem] text-[13px] text-slate-300">
+                            <Sentence parts={descriptionOf(e)} />
+                            {refused && (
+                              <span className={cx(
+                                "ml-2 inline-flex rounded-md px-1.5 py-0.5 align-middle text-[11px] font-medium",
+                                e.outcome === "denied" ? "bg-amber-400/10 text-amber-300" : "bg-red-400/10 text-red-300",
+                              )}>
+                                {e.outcome === "denied" ? "Denied" : "Failed"}{e.status_code ? ` (${e.status_code})` : ""}
+                              </span>
+                            )}
+                          </td>
+                          <td className="td whitespace-nowrap text-[13px] text-slate-300">{performedBy(e)}</td>
+                          <td className="td whitespace-nowrap text-[13px] text-slate-300" title={`${fullTime(e.created_at)} · ${timeAgo(e.created_at)}`}>
+                            {eventTime(e.created_at)}
+                          </td>
+                          <td className="td whitespace-nowrap font-mono text-[12px] text-slate-400">{e.ip_address ?? "–"}</td>
+                          <td className="td pt-3 text-slate-500">
+                            <ChevronRight size={14} className={cx("transition-transform", expanded && "rotate-90")} />
+                          </td>
+                        </motion.tr>
+                        {expanded && (
+                          <tr className="border-b border-phantix-800/40 bg-phantix-950/50">
+                            <td colSpan={6} className="px-5 py-4">
+                              {desc?.detail && <p className="mb-3 max-w-3xl text-[13px] text-slate-400">{desc.detail}</p>}
+                              <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <Fact label="Alert ID" mono>#{e.id} · {e.event_uid || "Not set"}</Fact>
+                                <Fact label="Status"><StatusPill status={e.status || "Not set"} /></Fact>
+                                <Fact label="Initiator">{[e.initiator_name, e.initiator_title].filter(Boolean).join(" · ") || "Not set"}</Fact>
+                                <Fact label="Authorizer">{e.authorizer_name ? [e.authorizer_name, e.authorizer_title].filter(Boolean).join(" · ") : "No approval required"}</Fact>
+                                <Fact label="Initiated">{fullTime(e.initiated_at)}</Fact>
+                                <Fact label="Completed">{fullTime(e.completed_at ?? e.created_at)}</Fact>
+                                <Fact label="Record">{e.resource_type && e.resource_id ? `${titleCase(e.resource_type)} #${e.resource_id}` : "None"}</Fact>
+                                <Fact label="Request" mono>{method || request ? `${method ?? ""} ${request ?? ""}`.trim() : "Not an API request"}</Fact>
+                              </dl>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
