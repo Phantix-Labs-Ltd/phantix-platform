@@ -7,12 +7,12 @@ import { siteFiles } from "./vite/siteFiles";
 /**
  * Platform dev server.
  *
- *   API_PROXY_TARGET   default https://staging.phantix.site
+ *   API_PROXY_TARGET   default http://127.0.0.1:8000 (set it for staging/prod)
  *   DEV_PORT           default 5174
  */
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const apiTarget = env.API_PROXY_TARGET || process.env.API_PROXY_TARGET || "https://staging.phantix.site";
+  const apiTarget = env.API_PROXY_TARGET || process.env.API_PROXY_TARGET || "http://127.0.0.1:8000";
   const port = Number(env.DEV_PORT || process.env.DEV_PORT || 5174);
   const localPublic = path.resolve(__dirname, "public");
   const monorepoPublic = path.resolve(__dirname, "../public");
